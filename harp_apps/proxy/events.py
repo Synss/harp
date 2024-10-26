@@ -6,6 +6,7 @@ from harp import get_logger
 from harp.http import BaseHttpMessage, HttpResponse
 from harp.http.requests import HttpRequest
 from harp.models import Transaction
+from harp.views.json import serialize
 
 logger = get_logger(__name__)
 
@@ -69,6 +70,9 @@ class ProxyFilterEvent(Event):
         script(context)
         if context["response"] != self.response:
             if context["response"] is not None:
+                if isinstance(context["response"], dict):
+                    context["response"] = HttpResponse(serialize(context["response"]), content_type="application/json")
+
                 if not isinstance(context["response"], HttpResponse):
                     raise ValueError(
                         f"Response must be an instance of HttpResponse, got {context['response']!r} ({type(context['response']).__module__}.{type(context['response']).__qualname__})."

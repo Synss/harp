@@ -7,6 +7,7 @@ from config.common import MapSource, merge_values
 from config.env import EnvVars
 
 from harp.typing import GlobalSettings
+from harp.utils.config.yaml import include_constructor  # noqa
 
 from ..applications import ApplicationsRegistry
 from ..defaults import DEFAULT_APPLICATIONS, DEFAULT_SYSTEM_CONFIG_FILENAMES
