@@ -69,7 +69,7 @@ Implementation (python): :class:`RemoteProbeSettings <harp_apps.proxy.settings.R
 Can be set at the remote enpoint level or at the remote level. If all levels are set to inherit, will use a naive
 implementation by default.
 
-Implementation (python): :class:`BaseLivenessSettings <harp_apps.proxy.settings.liveness.BaseLivenessSettings>`
+Implementation (python): :class:`BaseLivenessSettings <harp_apps.proxy.settings.liveness.base.BaseLivenessSettings>`
 
 .. jsonschema:: ./schema.json
    :pointer: /$defs/BaseLivenessSettings
@@ -79,7 +79,7 @@ This is the base type, actual implementation will depend on choosen type, docume
 Inherit
 .......
 
-Implementation (python): :class:`InheritLivenessSettings <harp_apps.proxy.settings.liveness.InheritLivenessSettings>`
+Implementation (python): :class:`InheritLivenessSettings <harp_apps.proxy.settings.liveness.base.BaseLivenessSettings>`
 
 .. jsonschema:: ./schema.json
    :pointer: /$defs/InheritLivenessSettings
@@ -87,7 +87,7 @@ Implementation (python): :class:`InheritLivenessSettings <harp_apps.proxy.settin
 Ignore
 ......
 
-Implementation (python): :class:`IgnoreLivenessSettings <harp_apps.proxy.settings.liveness.IgnoreLivenessSettings>`
+Implementation (python): :class:`IgnoreLivenessSettings <harp_apps.proxy.settings.liveness.base.BaseLivenessSettings>`
 
 .. jsonschema:: ./schema.json
    :pointer: /$defs/IgnoreLivenessSettings
@@ -95,7 +95,7 @@ Implementation (python): :class:`IgnoreLivenessSettings <harp_apps.proxy.setting
 Naive
 .....
 
-Implementation (python): :class:`NaiveLivenessSettings <harp_apps.proxy.settings.liveness.NaiveLivenessSettings>`
+Implementation (python): :class:`NaiveLivenessSettings <harp_apps.proxy.settings.liveness.base.BaseLivenessSettings>`
 
 .. jsonschema:: ./schema.json
    :pointer: /$defs/NaiveLivenessSettings
@@ -103,7 +103,7 @@ Implementation (python): :class:`NaiveLivenessSettings <harp_apps.proxy.settings
 Leaky Bucket
 ............
 
-Implementation (python): :class:`LeakyBucketLivenessSettings <harp_apps.proxy.settings.liveness.LeakyBucketLivenessSettings>`
+Implementation (python): :class:`LeakyBucketLivenessSettings <harp_apps.proxy.settings.liveness.base.BaseLivenessSettings>`
 
 .. jsonschema:: ./schema.json
    :pointer: /$defs/LeakyBucketLivenessSettings

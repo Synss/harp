@@ -242,7 +242,7 @@
   http_client: {}
   proxy:
     endpoints:
-    - description: An informative description of the endpoint (optional)
+    - description: A very informative description
       name: httpbins
       port: 4000
       remote:
