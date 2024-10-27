@@ -14,7 +14,7 @@ class TestEndpointSettings(BaseConfigurableTest):
     type = EndpointSettings
     initial = {**base_settings}
     expected = {**initial}
-    expected_verbose = {**expected, "description": None, "remote": None}
+    expected_verbose = {**expected, "description": None, "remote": None, "controller": None}
 
     def test_old_url_syntax(self):
         obj = self.create(url="http://my-endpoint:8080")
@@ -48,6 +48,7 @@ class TestEndpointSettingsWithRemote(BaseConfigurableTest):
             "probe": None,
             "liveness": {"type": "inherit"},
         },
+        "controller": None,
     }
 
 
@@ -60,6 +61,7 @@ class TestEndpointStateful(BaseConfigurableTest):
         "settings": {
             **TestEndpointSettings.expected,
             "description": None,
+            "controller": None,
         },
     }
     expected_verbose = {
@@ -95,7 +97,11 @@ class TestEndpointStatefulWithRemote(BaseConfigurableTest):
                 "min_pool_size": 1,
             },
         },
-        "settings": {**TestEndpointSettings.expected, "description": None},
+        "settings": {
+            **TestEndpointSettings.expected,
+            "description": None,
+            "controller": None,
+        },
     }
 
     expected_verbose = {

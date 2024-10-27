@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Type
 
 from httpx import AsyncClient
 from whistle import IAsyncEventDispatcher
@@ -48,6 +48,7 @@ class ProxyControllerResolver(DefaultControllerResolver):
         *,
         http_client: AsyncClient,
         dispatcher: Optional[IAsyncEventDispatcher] = None,
+        ControllerType: Optional[Type[HttpProxyController]] = None,
     ):
         if endpoint.settings.name in self._endpoints:
             raise RuntimeError(f"Endpoint «{endpoint.settings.name}» already exists.")
@@ -55,8 +56,12 @@ class ProxyControllerResolver(DefaultControllerResolver):
         if endpoint.settings.port in self._ports:
             raise RuntimeError(f"Port «{endpoint.settings.port}» already in use.")
 
+        ControllerType = ControllerType or HttpProxyController
+        if not issubclass(ControllerType, HttpProxyController):
+            raise RuntimeError(f"Controller «{ControllerType}» must be a subclass of HttpProxyController.")
+
         self._endpoints[endpoint.settings.name] = endpoint
-        controller = HttpProxyController(
+        controller = ControllerType(
             endpoint.remote,
             dispatcher=dispatcher,
             http_client=http_client,

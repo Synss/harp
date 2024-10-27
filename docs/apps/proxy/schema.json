@@ -8,6 +8,10 @@
         "description": {
           "anyOf": [{ "type": "string" }, { "type": "null" }],
           "default": null
+        },
+        "controller": {
+          "anyOf": [{ "type": "string" }, { "type": "null" }],
+          "default": null
         }
       },
       "required": ["name", "port"],
@@ -105,6 +109,10 @@
         "name": { "type": "string" },
         "port": { "type": "integer" },
         "description": {
+          "anyOf": [{ "type": "string" }, { "type": "null" }],
+          "default": null
+        },
+        "controller": {
           "anyOf": [{ "type": "string" }, { "type": "null" }],
           "default": null
         },
