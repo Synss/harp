@@ -42,6 +42,9 @@ from .settings.remote import Remote
 
 logger = get_logger(__name__)
 
+# XXX: move to some type module ?
+ProxyFilterResult = Optional[ProxyFilterEvent | HttpResponse | dict]
+
 _prometheus = None
 if USE_PROMETHEUS:
     from prometheus_client import Counter, Histogram
@@ -103,22 +106,39 @@ class HttpProxyController:
     def __repr__(self):
         return f"{type(self).__name__}({self.remote!r}, name={self.name!r})"
 
+    def get_next_remote_url(self) -> tuple[Optional[str], Optional[IndexError]]:
+        """Get the next remote URL to proxy from the remote configuration."""
+        remote_err = None
+        try:
+            remote_url = self.remote.get_url()
+        except IndexError as exc:
+            remote_url = None
+            remote_err = exc
+        return remote_url, remote_err
+
+    async def filter_request(self, context: ProxyFilterEvent) -> ProxyFilterResult:
+        return cast(
+            ProxyFilterEvent,
+            await self.adispatch(EVENT_FILTER_PROXY_REQUEST, context),
+        )
+
+    async def filter_response(self, context: ProxyFilterEvent) -> ProxyFilterEvent:
+        return cast(
+            ProxyFilterEvent,
+            await self.adispatch(EVENT_FILTER_PROXY_RESPONSE, context),
+        )
+
     async def __call__(self, request: HttpRequest) -> HttpResponse:
         """Handle an incoming request and proxy it to the configured URL."""
 
         labels = {"name": self.name or "-", "method": request.method}
 
         with performances_observer("transaction", labels=labels):
-            # create an envelope to override things, without touching the original request
             context = ProxyFilterEvent(self.name, request=request)
-            await self.adispatch(EVENT_FILTER_PROXY_REQUEST, context)
+            context.update(await self.filter_request(context))
 
-            remote_err = None
-            try:
-                remote_url = self.remote.get_url()
-            except IndexError as exc:
-                remote_url = None
-                remote_err = exc
+            # where to proxy to?
+            remote_url, remote_err = self.get_next_remote_url()
             parsed_remote_url = urlparse(remote_url) if remote_url else None
 
             # override a few required headers. That may be done in the httpx request instead of here.
@@ -156,8 +176,7 @@ class HttpProxyController:
                     context, remote_url, full_remote_url, labels=labels, transaction=transaction
                 )
 
-            await self.adispatch(EVENT_FILTER_PROXY_RESPONSE, context)
-
+            context = await self.filter_response(context) or context
             await context.response.aread()
 
             return await self.end_transaction(remote_url, transaction, context.response)
