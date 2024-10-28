@@ -37,10 +37,10 @@
     |                                                        |                                                        |
     | Enhance and extend.                                    | Dive in the internals.                                 |
     |                                                        |                                                        |
-    | - :doc:`/develop/run`                                  | - :doc:`/contribute/introduction`                      |
-    | - :doc:`/develop/customize`                            | - :doc:`/contribute/overview`                          |
-    | - :doc:`/develop/extend`                               | - :doc:`/contribute/dependency-injection`              |
-    |                                                        | - :doc:`/contribute/events`                            |
+    | - :doc:`/develop/quick-start`                          | - :doc:`/contribute/introduction`                      |
+    | - :doc:`/develop/run`                                  | - :doc:`/contribute/overview`                          |
+    | - :doc:`/develop/customize`                            | - :doc:`/contribute/dependency-injection`              |
+    | - :doc:`/develop/extend`                               | - :doc:`/contribute/events`                            |
     |                                                        | - :doc:`/contribute/applications`                      |
     +--------------------------------------------------------+--------------------------------------------------------+
     | :doc:`Reference </reference/index>`                                                                             |
