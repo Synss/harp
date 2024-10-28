@@ -39,7 +39,7 @@ proxy:
           failure_threshold: 2
           success_threshold: 2
 
-        # A periopdic probe to try to close the circuit breaker even if it's not actively
+        # A periodic probe to try to close the circuit breaker even if it's not actively
         # queried by the end user.
         probe:
           method: GET
