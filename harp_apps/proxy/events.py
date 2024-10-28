@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from typing import Callable, Optional, Self
 
 from whistle import Event
 
@@ -69,16 +69,29 @@ class ProxyFilterEvent(Event):
         context = self.create_execution_context()
         script(context)
         if context["response"] != self.response:
-            if context["response"] is not None:
-                if isinstance(context["response"], dict):
-                    context["response"] = HttpResponse(serialize(context["response"]), content_type="application/json")
-
-                if not isinstance(context["response"], HttpResponse):
-                    raise ValueError(
-                        f"Response must be an instance of HttpResponse, got {context['response']!r} ({type(context['response']).__module__}.{type(context['response']).__qualname__})."
-                    )
-            self.set_response(context["response"])
+            if context["response"] is None:
+                self.set_response(None)
+            else:
+                self.update(context["response"])
         return context
+
+    def update(self, mixed: Optional[dict | HttpResponse | Self]) -> Self:
+        if mixed is None:
+            return self
+
+        if isinstance(mixed, ProxyFilterEvent):
+            return mixed
+
+        if isinstance(mixed, dict):
+            mixed = HttpResponse(serialize(mixed), content_type="application/json")
+
+        if not isinstance(mixed, HttpResponse):
+            raise ValueError(
+                f"Response must be an instance of HttpResponse or a dict, got {mixed!r} ({type(mixed).__module__}.{type(mixed).__qualname__})."
+            )
+
+        self.set_response(mixed)
+        return self
 
 
 class TransactionEvent(Event):

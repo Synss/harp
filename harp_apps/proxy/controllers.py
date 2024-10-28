@@ -42,6 +42,9 @@ from .settings.remote import Remote
 
 logger = get_logger(__name__)
 
+# XXX: move to some type module ?
+ProxyFilterResult = Optional[ProxyFilterEvent | HttpResponse | dict]
+
 _prometheus = None
 if USE_PROMETHEUS:
     from prometheus_client import Counter, Histogram
@@ -100,59 +103,42 @@ class HttpProxyController:
             except AttributeError:
                 self.user_agent = "harp"
 
-    async def adispatch(self, event_id, event=None):
-        """
-        Shortcut method to dispatch an event using the controller's dispatcher, if there is one.
+    def __repr__(self):
+        return f"{type(self).__name__}({self.remote!r}, name={self.name!r})"
 
-        :return: :class:`IEvent <whistle.IEvent>` or None
-        """
-        if self._dispatcher:
-            return await self._dispatcher.adispatch(event_id, event)
+    def get_next_remote_url(self) -> tuple[Optional[str], Optional[IndexError]]:
+        """Get the next remote URL to proxy from the remote configuration."""
+        remote_err = None
+        try:
+            remote_url = self.remote.get_url()
+        except IndexError as exc:
+            remote_url = None
+            remote_err = exc
+        return remote_url, remote_err
 
-    def debug(self, message, *args, **kwargs):
-        if not self._logging:
-            return
-        transaction: Transaction | None = kwargs.pop("transaction", None)
-        if transaction:
-            kwargs["transaction"] = transaction.id
-            kwargs.update(transaction.extras)
-        logger.debug(message, *args, **kwargs)
+    async def filter_request(self, context: ProxyFilterEvent) -> ProxyFilterResult:
+        return cast(
+            ProxyFilterEvent,
+            await self.adispatch(EVENT_FILTER_PROXY_REQUEST, context),
+        )
 
-    def info(self, message, *args, **kwargs):
-        if not self._logging:
-            return
-        transaction: Transaction | None = kwargs.pop("transaction", None)
-        if transaction:
-            kwargs["transaction"] = transaction.id
-            kwargs.update(transaction.extras)
-        logger.info(message, *args, **kwargs)
-
-    def warning(self, message, *args, **kwargs):
-        if not self._logging:
-            return
-        transaction: Transaction | None = kwargs.pop("transaction", None)
-        if transaction:
-            kwargs["transaction"] = transaction.id
-            kwargs.update(transaction.extras)
-        logger.warning(message, *args, **kwargs)
+    async def filter_response(self, context: ProxyFilterEvent) -> ProxyFilterEvent:
+        return cast(
+            ProxyFilterEvent,
+            await self.adispatch(EVENT_FILTER_PROXY_RESPONSE, context),
+        )
 
     async def __call__(self, request: HttpRequest) -> HttpResponse:
         """Handle an incoming request and proxy it to the configured URL."""
 
         labels = {"name": self.name or "-", "method": request.method}
 
-        with performances_observer("harp_proxy", labels=labels):
-            # create an envelope to override things, without touching the original request
+        with performances_observer("transaction", labels=labels):
             context = ProxyFilterEvent(self.name, request=request)
+            context.update(await self.filter_request(context))
 
-            await self.adispatch(EVENT_FILTER_PROXY_REQUEST, context)
-
-            remote_err = None
-            try:
-                remote_url = self.remote.get_url()
-            except IndexError as exc:
-                remote_url = None
-                remote_err = exc
+            # where to proxy to?
+            remote_url, remote_err = self.get_next_remote_url()
             parsed_remote_url = urlparse(remote_url) if remote_url else None
 
             # override a few required headers. That may be done in the httpx request instead of here.
@@ -180,73 +166,79 @@ class HttpProxyController:
                 )
 
             await context.request.aread()
-            url = urljoin(remote_url, context.request.path) + (
+            full_remote_url = urljoin(remote_url, context.request.path) + (
                 f"?{urlencode(context.request.query)}" if context.request.query else ""
             )
 
-            with performances_observer("harp_http", labels=labels):
-                if not context.response:
-                    # PROXY REQUEST
-                    remote_request: httpx.Request = self.http_client.build_request(
-                        context.request.method,
-                        url,
-                        headers=list(context.request.headers.items()),
-                        content=context.request.body,
-                        extensions={"harp": {"endpoint": self.name}},
-                    )
-                    context.request.extensions["remote_method"] = remote_request.method
-                    context.request.extensions["remote_url"] = remote_request.url
+            # If nothing prepared a ready to send response, it's time to proxy.
+            if not context.response:
+                context.response = await self.handle_remote_transaction(
+                    context, remote_url, full_remote_url, labels=labels, transaction=transaction
+                )
 
-                    self.debug(
-                        f"▶▶ {context.request.method} {url}",
-                        transaction=transaction,
-                        extensions=remote_request.extensions,
-                    )
-
-                    # PROXY RESPONSE
-                    try:
-                        remote_response: httpx.Response = await self.http_client.send(remote_request)
-                    except Exception as exc:
-                        return await self.end_transaction(remote_url, transaction, exc)
-
-                    self.remote.notify_url_status(remote_url, remote_response.status_code)
-
-                    await remote_response.aread()
-                    await remote_response.aclose()
-
-                    if self.remote[remote_url].status == CHECKING and 200 <= remote_response.status_code < 400:
-                        self.remote.set_up(remote_url)
-
-                    try:
-                        _elapsed = f"{remote_response.elapsed.total_seconds()}s"
-                    except RuntimeError:
-                        _elapsed = "n/a"
-                    self.debug(
-                        f"◀◀ {remote_response.status_code} {remote_response.reason_phrase} ({_elapsed}{' cached' if remote_response.extensions.get('from_cache') else ''})",
-                        transaction=transaction,
-                    )
-
-                    response_headers = {
-                        k: v
-                        for k, v in remote_response.headers.multi_items()
-                        if k.lower() not in ("server", "date", "content-encoding", "content-length")
-                    }
-                    # XXX for now, we use transaction "extras" to store searchable data for later
-                    transaction.extras["status_class"] = f"{remote_response.status_code // 100}xx"
-
-                    if remote_response.extensions.get("from_cache"):
-                        transaction.extras["cached"] = remote_response.extensions.get("cache_metadata", {}).get(
-                            "cache_key", True
-                        )
-
-                    context.response = HttpResponse(
-                        remote_response.content, status=remote_response.status_code, headers=response_headers
-                    )
-            await self.adispatch(EVENT_FILTER_PROXY_RESPONSE, context)
-
+            context = await self.filter_response(context) or context
             await context.response.aread()
 
             return await self.end_transaction(remote_url, transaction, context.response)
+
+    async def handle_remote_transaction(
+        self, context: ProxyFilterEvent, base_remote_url, full_remote_url, *, labels, transaction
+    ) -> BaseHttpMessage:
+        with performances_observer("remote_transaction", labels=labels):
+            # PROXY REQUEST
+            remote_request: httpx.Request = self.http_client.build_request(
+                context.request.method,
+                full_remote_url,
+                headers=list(context.request.headers.items()),
+                content=context.request.body,
+                extensions={"harp": {"endpoint": self.name}},
+            )
+            context.request.extensions["remote_method"] = remote_request.method
+            context.request.extensions["remote_url"] = remote_request.url
+
+            self.debug(
+                f"▶▶ {context.request.method} {full_remote_url}",
+                transaction=transaction,
+                extensions=remote_request.extensions,
+            )
+
+            # PROXY RESPONSE
+            try:
+                remote_response: httpx.Response = await self.http_client.send(remote_request)
+            except Exception as exc:
+                return await self.end_transaction(base_remote_url, transaction, exc)
+
+            self.remote.notify_url_status(base_remote_url, remote_response.status_code)
+
+            await remote_response.aread()
+            await remote_response.aclose()
+
+            if self.remote[base_remote_url].status == CHECKING and 200 <= remote_response.status_code < 400:
+                self.remote.set_up(base_remote_url)
+
+            try:
+                _elapsed = f"{remote_response.elapsed.total_seconds()}s"
+            except RuntimeError:
+                _elapsed = "n/a"
+            self.debug(
+                f"◀◀ {remote_response.status_code} {remote_response.reason_phrase} ({_elapsed}{' cached' if remote_response.extensions.get('from_cache') else ''})",
+                transaction=transaction,
+            )
+
+            response_headers = {
+                k: v
+                for k, v in remote_response.headers.multi_items()
+                if k.lower() not in ("server", "date", "content-encoding", "content-length")
+            }
+            # XXX for now, we use transaction "extras" to store searchable data for later
+            transaction.extras["status_class"] = f"{remote_response.status_code // 100}xx"
+
+            if remote_response.extensions.get("from_cache"):
+                transaction.extras["cached"] = remote_response.extensions.get("cache_metadata", {}).get(
+                    "cache_key", True
+                )
+
+        return HttpResponse(remote_response.content, status=remote_response.status_code, headers=response_headers)
 
     async def end_transaction(
         self,
@@ -317,7 +309,17 @@ class HttpProxyController:
 
         return cast(HttpResponse, response)
 
-    async def _create_transaction_from_request(self, request: HttpRequest, *, tags=None):
+    async def _create_transaction_from_request(self, request: HttpRequest, *, tags=None) -> Transaction:
+        """
+        Create a new transaction from the incoming request, generating a new (random, but orderable according to the
+        instant it happens) transaction ID.
+
+        Once created, it dispatches the EVENT_TRANSACTION_STARTED event to allow storage applications (or anything
+        else) to react to this creation, then it dispatches the EVENT_TRANSACTION_MESSAGE event to allow to react to
+        the fact this transaction contained a request.
+
+        :return: Transaction
+        """
         transaction = Transaction(
             id=generate_transaction_id_ksuid(),
             type="http",
@@ -327,6 +329,7 @@ class HttpProxyController:
         )
         request.extensions["transaction"] = transaction
 
+        # If the request cache control asked for cache to be disabled, mark it in transaction.
         request_cache_control = request.headers.get("cache-control")
         if request_cache_control:
             request_cache_control = parse_cache_control([request_cache_control])
@@ -347,8 +350,32 @@ class HttpProxyController:
 
         return transaction
 
-    def __repr__(self):
-        return f"{type(self).__name__}({self.remote!r}, name={self.name!r})"
+    async def adispatch(self, event_id, event=None):
+        """
+        Shortcut method to dispatch an event using the controller's dispatcher, if there is one.
+
+        :return: :class:`IEvent <whistle.IEvent>` or None
+        """
+        if self._dispatcher:
+            return await self._dispatcher.adispatch(event_id, event)
+
+    def debug(self, message, *args, **kwargs):
+        self._log("debug", message, *args, **kwargs)
+
+    def info(self, message, *args, **kwargs):
+        self._log("info", message, *args, **kwargs)
+
+    def warning(self, message, *args, **kwargs):
+        self._log("warning", message, *args, **kwargs)
+
+    def _log(self, level, message, *args, **kwargs):
+        if not self._logging:
+            return
+        transaction: Transaction | None = kwargs.pop("transaction", None)
+        if transaction:
+            kwargs["transaction"] = transaction.id
+            kwargs.update(transaction.extras)
+        getattr(logger, level)(message, *args, **kwargs)
 
 
 @lru_cache

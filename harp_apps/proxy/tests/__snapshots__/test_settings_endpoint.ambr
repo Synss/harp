@@ -305,6 +305,18 @@
     }),
     'additionalProperties': False,
     'properties': dict({
+      'controller': dict({
+        'anyOf': list([
+          dict({
+            'type': 'string',
+          }),
+          dict({
+            'type': 'null',
+          }),
+        ]),
+        'default': None,
+        'title': 'Controller',
+      }),
       'description': dict({
         'anyOf': list([
           dict({
@@ -651,6 +663,18 @@
     }),
     'additionalProperties': False,
     'properties': dict({
+      'controller': dict({
+        'anyOf': list([
+          dict({
+            'type': 'string',
+          }),
+          dict({
+            'type': 'null',
+          }),
+        ]),
+        'default': None,
+        'title': 'Controller',
+      }),
       'description': dict({
         'anyOf': list([
           dict({
@@ -997,6 +1021,18 @@
     }),
     'additionalProperties': False,
     'properties': dict({
+      'controller': dict({
+        'anyOf': list([
+          dict({
+            'type': 'string',
+          }),
+          dict({
+            'type': 'null',
+          }),
+        ]),
+        'default': None,
+        'title': 'Controller',
+      }),
       'description': dict({
         'anyOf': list([
           dict({
@@ -1343,6 +1379,18 @@
     }),
     'additionalProperties': False,
     'properties': dict({
+      'controller': dict({
+        'anyOf': list([
+          dict({
+            'type': 'string',
+          }),
+          dict({
+            'type': 'null',
+          }),
+        ]),
+        'default': None,
+        'title': 'Controller',
+      }),
       'description': dict({
         'anyOf': list([
           dict({
@@ -1411,6 +1459,18 @@
               url: http://my-endpoint:8080
         ''',
         'properties': dict({
+          'controller': dict({
+            'anyOf': list([
+              dict({
+                'type': 'string',
+              }),
+              dict({
+                'type': 'null',
+              }),
+            ]),
+            'default': None,
+            'title': 'Controller',
+          }),
           'description': dict({
             'anyOf': list([
               dict({
@@ -1887,6 +1947,18 @@
               url: http://my-endpoint:8080
         ''',
         'properties': dict({
+          'controller': dict({
+            'anyOf': list([
+              dict({
+                'type': 'string',
+              }),
+              dict({
+                'type': 'null',
+              }),
+            ]),
+            'default': None,
+            'title': 'Controller',
+          }),
           'description': dict({
             'anyOf': list([
               dict({
@@ -2382,6 +2454,18 @@
               url: http://my-endpoint:8080
         ''',
         'properties': dict({
+          'controller': dict({
+            'anyOf': list([
+              dict({
+                'type': 'string',
+              }),
+              dict({
+                'type': 'null',
+              }),
+            ]),
+            'default': None,
+            'title': 'Controller',
+          }),
           'description': dict({
             'anyOf': list([
               dict({
@@ -2858,6 +2942,18 @@
               url: http://my-endpoint:8080
         ''',
         'properties': dict({
+          'controller': dict({
+            'anyOf': list([
+              dict({
+                'type': 'string',
+              }),
+              dict({
+                'type': 'null',
+              }),
+            ]),
+            'default': None,
+            'title': 'Controller',
+          }),
           'description': dict({
             'anyOf': list([
               dict({

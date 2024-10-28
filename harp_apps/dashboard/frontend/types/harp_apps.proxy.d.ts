@@ -49,6 +49,7 @@ declare namespace Apps.Proxy {
     name: string;
     port: number;
     description?: string | null;
+    controller?: string | null;
     remote?: RemoteSettings | null;
   }
   /**
@@ -142,6 +143,7 @@ declare namespace Apps.Proxy {
     name: string;
     port: number;
     description?: string | null;
+    controller?: string | null;
   }
   export interface Endpoint {
     settings: EndpointSettings;

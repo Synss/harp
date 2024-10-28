@@ -7,9 +7,17 @@ from harp_apps.proxy.settings.remote import Remote, RemoteEndpointSettings, Remo
 
 
 class BaseEndpointSettings(Configurable):
+    #: endpoint name, used as an unique identifier
     name: str
+
+    #: port to listen on
     port: int
+
+    #: description, informative only
     description: Optional[str] = None
+
+    #: custom controller
+    controller: Optional[str] = None
 
 
 class EndpointSettings(BaseEndpointSettings):
@@ -37,7 +45,7 @@ class EndpointSettings(BaseEndpointSettings):
 
     """
 
-    # resilience-compatible remote definition, with url pools, probes, etc.
+    #: remote definition, with url pools, probes, etc.
     remote: Optional[RemoteSettings] = Field(None, repr=False)
 
     @model_validator(mode="before")

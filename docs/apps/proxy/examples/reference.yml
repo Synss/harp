@@ -1,6 +1,7 @@
 proxy:
   endpoints:
-  - description: null
+  - controller: null
+    description: null
     name: my-endpoint
     port: 4000
     remote:
