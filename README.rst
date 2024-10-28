@@ -9,6 +9,8 @@ To be notified when we release new features, you can `subscribe to the release a
 We do not send anything unrelated to the lists you subscribed to, and we do not communicate your personnal informations with anyone. And
 of course, you can unsubscribe anytime using the unsubscribe link sent with all mails.
 
+To discuss issues, use cases, share your ideas, etc. you can join our `discord server <https://discord.gg/UKcDT4Ht>`_.
+
 **HARP is released as an Early Access Preview.**
 
 .. image:: https://img.shields.io/pypi/v/harp-proxy.svg
