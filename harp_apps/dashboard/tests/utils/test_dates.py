@@ -4,12 +4,12 @@ from unittest.mock import patch
 
 import pytest
 
-from harp.typing.storage import TransactionsGroupedByTimeBucket
 from harp_apps.dashboard.utils.dates import (
     _truncate_datetime_for_time_bucket,
     generate_continuous_time_range,
     get_start_datetime_from_range,
 )
+from harp_apps.storage.types import TransactionsGroupedByTimeBucket
 
 
 def test_get_start_datetime_from_range():
@@ -38,8 +38,18 @@ def test__truncate_datetime_for_time_bucket():
 def test_generate_continuous_time_range():
     discontinuous_transactions: List[TransactionsGroupedByTimeBucket]
     discontinuous_transactions = [
-        {"datetime": datetime(2022, 1, 1, 0, 0, 0, tzinfo=UTC), "count": 10, "errors": 0, "meanDuration": 1.0},
-        {"datetime": datetime(2022, 1, 1, 2, 0, 0, tzinfo=UTC), "count": 20, "errors": 1, "meanDuration": 1.5},
+        {
+            "datetime": datetime(2022, 1, 1, 0, 0, 0, tzinfo=UTC),
+            "count": 10,
+            "errors": 0,
+            "meanDuration": 1.0,
+        },
+        {
+            "datetime": datetime(2022, 1, 1, 2, 0, 0, tzinfo=UTC),
+            "count": 20,
+            "errors": 1,
+            "meanDuration": 1.5,
+        },
     ]
     start_datetime = datetime(2022, 1, 1, 0, 0, 0, tzinfo=UTC)
     time_bucket = "hour"

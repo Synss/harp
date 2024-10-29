@@ -1,6 +1,6 @@
 import logging.config
 import os
-from typing import Any
+from typing import Any, Optional
 
 import structlog
 
@@ -36,13 +36,16 @@ LOGGING_FORMATTERS = {
     },
     "plain": {
         "()": structlog.stdlib.ProcessorFormatter,
-        "processor": structlog.dev.ConsoleRenderer(exception_formatter=structlog.dev.plain_traceback, colors=False),
+        "processor": structlog.dev.ConsoleRenderer(
+            exception_formatter=structlog.dev.plain_traceback,
+            colors=False,
+        ),
         "foreign_pre_chain": shared_processors,
     },
     "pretty": {
         "()": structlog.stdlib.ProcessorFormatter,
         "processor": structlog.dev.ConsoleRenderer(
-            exception_formatter=structlog.dev.RichTracebackFormatter(**_exc_formatter_options)
+            exception_formatter=structlog.dev.plain_traceback,
         ),
         "foreign_pre_chain": shared_processors,
     },
@@ -58,6 +61,12 @@ LOGGING_FORMAT = os.environ.get("LOGGING_FORMAT", DEFAULT_LOGGING_FORMAT)
 if LOGGING_FORMAT not in LOGGING_FORMATTERS:
     LOGGING_FORMAT = DEFAULT_LOGGING_FORMAT
 
+
+def _get_logging_level(name: Optional[str], *, default="warning"):
+    varname = "_".join(filter(None, ("LOGGING", name.upper() if name is not None else None)))
+    return os.environ.get(varname, default).upper()
+
+
 logging_config = {
     "version": 1,
     "disable_existing_loggers": True,
@@ -70,17 +79,19 @@ logging_config = {
     },
     "root": {
         "handlers": ["console"],
-        "level": logging.INFO,
+        "level": _get_logging_level(None, default="info"),
     },
     "loggers": {
-        "harp": {"level": os.environ.get("LOGGING_HARP", "INFO")},
-        "harp_apps": {"level": os.environ.get("LOGGING_HARP", "INFO")},
-        "harp.event_dispatcher": {"level": os.environ.get("LOGGING_HARP_EVENTS", "WARNING")},
-        "httpcore": {"level": os.environ.get("LOGGING_HTTP", "WARNING")},  # todo wrap in structlog
-        "httpx": {"level": os.environ.get("LOGGING_HTTP", "WARNING")},  # todo wrap in structlog
-        "hypercorn.access": {"level": os.environ.get("LOGGING_HYPERCORN_ACCESS", "WARNING")},
-        "hypercorn.error": {"level": os.environ.get("LOGGING_HYPERCORN_ERROR", "INFO")},
-        "sqlalchemy.engine": {"level": os.environ.get("LOGGING_SQLALCHEMY", "WARNING")},
+        "harp": {"level": _get_logging_level("harp", default="info")},
+        "harp.event_dispatcher": {"level": _get_logging_level("events")},
+        "harp_apps": {"level": _get_logging_level("harp")},
+        "harp_apps.http_client": {"level": _get_logging_level("http_client")},
+        "harp_apps.proxy": {"level": _get_logging_level("proxy")},
+        "httpcore": {"level": _get_logging_level("http_core")},
+        "httpx": {"level": _get_logging_level("http_core")},
+        "hypercorn.access": {"level": _get_logging_level("http", default="info")},
+        "hypercorn.error": {"level": _get_logging_level("http", default="info")},
+        "sqlalchemy.engine": {"level": _get_logging_level("sql")},
     },
 }
 
@@ -99,7 +110,10 @@ def get_logger(name, *args: Any, **initial_values: Any) -> Any:
     if name == "env_py":
         name = "__migrations__"
     else:
-        pkg, mod = name.rsplit(".", 1)
+        try:
+            pkg, mod = name.rsplit(".", 1)
+        except ValueError:
+            return structlog.get_logger(name, *args, **initial_values)
         if mod in ("__init__", "__main__", "__app__"):
             name = pkg
 

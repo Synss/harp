@@ -1,0 +1,54 @@
+.. table::
+    :class: jumbo-toc
+    :widths: 50 50
+
+    +-----------------------------------------------------------------------------------------------------------------+
+    | :doc:`Start Guide </start/index>`                                                                               |
+    |                                                                                                                 |
+    | Install and run your first proxy.                                                                               |
+    |                                                                                                                 |
+    | - :doc:`/start/quick`                                                                                           |
+    | - :doc:`Using Docker </start/docker>`                                                                           |
+    | - :doc:`Using Python </start/python>`                                                                           |
+    | - :doc:`From Sources </start/sources>`                                                                          |
+    +-----------------------------------------------------------------------------------------------------------------+
+    | :doc:`Features Guide </features/index>`                                                                         |
+    |                                                                                                                 |
+    | Discover HARP Proxy, feature by feature.                                                                        |
+    |                                                                                                                 |
+    | - :doc:`/features/configuration`                                                                                |
+    | - :doc:`Proxy </features/proxy>`                                                                                |
+    | - :doc:`Cache </features/caching>`                                                                              |
+    | - :doc:`Circuit Breaker </features/circuit-breaker>`                                                            |
+    | - :ref:`Probes <probes>`                                                                                        |
+    | - :doc:`/features/auditlog`                                                                                     |
+    | - :doc:`/features/rules`                                                                                        |
+    +--------------------------------------------------------+--------------------------------------------------------+
+    | :doc:`User's Guide </user/index>`                      | :doc:`Operator's Guide </operate/index>`               |
+    |                                                        |                                                        |
+    | Explore the user interface.                            | Configure and watch.                                   |
+    |                                                        |                                                        |
+    | - :doc:`/user/overview`                                | - :doc:`/operate/configure/index`                      |
+    | - :doc:`/user/transactions`                            | - :doc:`/operate/runtime`                              |
+    | - :doc:`/user/system`                                  |                                                        |
+    | - :doc:`/user/performances`                            |                                                        |
+    +--------------------------------------------------------+--------------------------------------------------------+
+    | :doc:`Developer's Guide </develop/index>`              | :doc:`Contributor's Guide </contribute/index>`         |
+    |                                                        |                                                        |
+    | Enhance and extend.                                    | Dive in the internals.                                 |
+    |                                                        |                                                        |
+    | - :doc:`/develop/quick-start`                          | - :doc:`/contribute/introduction`                      |
+    | - :doc:`/develop/run`                                  | - :doc:`/contribute/overview`                          |
+    | - :doc:`/develop/customize`                            | - :doc:`/contribute/dependency-injection`              |
+    | - :doc:`/develop/extend`                               | - :doc:`/contribute/events`                            |
+    |                                                        | - :doc:`/contribute/applications`                      |
+    +--------------------------------------------------------+--------------------------------------------------------+
+    | :doc:`Reference </reference/index>`                                                                             |
+    |                                                                                                                 |
+    | Exhaustive reference list and description of commands, functions, classes, settings, etc.                       |
+    |                                                                                                                 |
+    | - :doc:`Core Reference </reference/core/harp>`                                                                  |
+    | - :doc:`Applications Reference </reference/apps/harp_apps>`                                                     |
+    | - :doc:`Configuration Reference </config/index>`                                                                |
+    | - :doc:`Command Line Reference </commandline/index>`                                                            |
+    +-----------------------------------------------------------------------------------------------------------------+

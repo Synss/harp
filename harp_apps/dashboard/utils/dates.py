@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from typing import List
 
-from harp.typing.storage import TransactionsGroupedByTimeBucket
+from harp_apps.storage.types import TransactionsGroupedByTimeBucket
 
 
 def get_start_datetime_from_range(range: str | None, *, now=None) -> datetime | None:
@@ -68,6 +68,13 @@ def generate_continuous_time_range(
             continuous_transactions.append([d for d in discontinuous_transactions if d["datetime"] == t][0])
         else:
             continuous_transactions.append(
-                {"datetime": t, "count": None, "errors": None, "meanDuration": None, "meanApdex": None}
+                {
+                    "datetime": t,
+                    "count": None,
+                    "errors": None,
+                    "cached": 0,
+                    "meanDuration": None,
+                    "meanTpdex": None,
+                }
             )
     return continuous_transactions

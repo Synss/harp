@@ -31,9 +31,9 @@ export function TransactionDetailOnQuerySuccess({ query }: { query: QueryObserve
   const location = useLocation()
 
   const transaction = query.data
-  const [duration, apdex, cached, noCache] = [
+  const [duration, tpdex, cached, noCache] = [
     transaction.elapsed ? Math.trunc(transaction.elapsed) / 1000 : null,
-    transaction.apdex ?? null,
+    transaction.tpdex ?? null,
     !!transaction.extras?.cached,
     !!transaction.extras?.no_cache,
   ]
@@ -48,7 +48,7 @@ export function TransactionDetailOnQuerySuccess({ query }: { query: QueryObserve
             <CopyToClipboard text={transactionUrl} />
             <Duration
               duration={duration}
-              apdex={apdex}
+              tpdex={tpdex}
               cached={cached}
               noCache={noCache}
               verbose

@@ -1,5 +1,5 @@
-import asyncio
 import os
+import shlex
 import subprocess
 import threading
 from string import Template
@@ -11,7 +11,7 @@ import pytest
 from harp import get_logger
 from harp.commandline.start import assert_development_packages_are_available
 from harp.utils.network import get_available_network_port, wait_for_port
-from harp_apps.sqlalchemy_storage.utils.testing.mixins import get_scoped_database_url
+from harp_apps.storage.utils.testing.sql import get_scoped_database_url
 
 logger = get_logger(__name__)
 
@@ -19,7 +19,17 @@ logger = get_logger(__name__)
 class RunHarpProxyInSubprocessThread(threading.Thread):
     daemon = False
 
-    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, *, daemon=None, config=None):
+    def __init__(
+        self,
+        group=None,
+        target=None,
+        name=None,
+        args=(),
+        kwargs=None,
+        *,
+        daemon=None,
+        config=None,
+    ):
         super().__init__(group, target, name, args, kwargs, daemon=daemon)
         self.config_filename = None
         if config:
@@ -32,18 +42,18 @@ class RunHarpProxyInSubprocessThread(threading.Thread):
         assert_development_packages_are_available()
 
     def run(self):
-        self.process = subprocess.Popen(
-            [
-                "harp",
-                "start",
-                "server",
-                *(("--file", self.config_filename) if self.config_filename else ()),
-                "--disable",
-                "telemetry",
-                "--disable",
-                "dashboard",
-            ]
-        )
+        command = [
+            "harp",
+            "start",
+            "server",
+            *(("--file", self.config_filename) if self.config_filename else ()),
+            "--disable",
+            "telemetry",
+            "--disable",
+            "dashboard",
+        ]
+        logger.info(f"Running command: {shlex.join(command)}")
+        self.process = subprocess.Popen(command)
 
     def join(self, timeout=None):
         try:
@@ -65,17 +75,8 @@ class RunHarpProxyInSubprocessThread(threading.Thread):
 class AbstractProxyBenchmark:
     config = Template("")
 
-    @pytest.fixture(scope="class")
-    async def setup_event_loop(self):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            yield loop
-        finally:
-            loop.close()
-
     @pytest.fixture
-    async def proxy(self, setup_event_loop, httpbin, database_url, test_id):
+    async def proxy(self, httpbin, database_url, test_id):
         async with get_scoped_database_url(database_url, test_id) as scoped_database_url:
             port = get_available_network_port()
 

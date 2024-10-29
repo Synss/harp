@@ -1,8 +1,19 @@
 Janitor
 =======
 
+.. tags:: applications
+
+.. versionadded:: 0.5
+
 The ``janitor`` application runs a background worker to clean up the storage. It deletes all transactions older than 2
 months, and the related orphan blobs.
+
+.. toctree::
+    :hidden:
+    :maxdepth: 1
+
+    Internals </reference/apps/harp_apps.janitor>
+
 
 Defaults
 ::::::::

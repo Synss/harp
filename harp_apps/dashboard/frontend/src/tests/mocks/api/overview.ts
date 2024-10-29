@@ -8,18 +8,20 @@ const mockOverviewData: OverviewData = {
   },
   count: 20,
   meanDuration: 30,
-  meanApdex: 95,
+  meanTpdex: 95,
   timeRange: "1h",
   transactions: [
     {
-      count: 10,
       datetime: "2021-08-01T00:00:00Z",
+      count: 10,
       errors: 3,
+      cached: 0,
     },
     {
-      count: 20,
       datetime: "2021-08-01T01:00:00Z",
+      count: 20,
       errors: 5,
+      cached: 2,
     },
   ],
 }

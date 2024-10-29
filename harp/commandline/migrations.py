@@ -11,10 +11,11 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from harp import get_logger
 from harp.commandline.options.server import add_harp_server_click_options
 from harp.utils.commandline import click
-from harp_apps.sqlalchemy_storage.utils.migrations import (
+from harp_apps.storage.utils.migrations import (
     create_alembic_config,
-    create_harp_config_with_sqlalchemy_storage_from_command_line_options,
+    create_harp_settings_with_storage_from_command_line_options,
     do_migrate,
+    do_reset,
 )
 
 logger = get_logger(__name__)
@@ -26,8 +27,8 @@ logger = get_logger(__name__)
 @click.argument("revision", nargs=1)
 @click.option("--reset", is_flag=True, help="Reset the database (drop all before migrations).")
 def migrate(*, operation, revision, reset=False, **kwargs):
-    config = create_harp_config_with_sqlalchemy_storage_from_command_line_options(kwargs)
-    alembic_cfg = create_alembic_config(config.settings.get("storage", {}).get("url", None))
+    settings = create_harp_settings_with_storage_from_command_line_options(kwargs)
+    alembic_cfg = create_alembic_config(settings.get("storage").url)
     engine = create_async_engine(alembic_cfg.get_main_option("sqlalchemy.url"))
 
     if operation == "up":
@@ -47,9 +48,25 @@ migrate = cast(BaseCommand, migrate)
 @add_harp_server_click_options
 @click.argument("message", nargs=1)
 def create_migration(*, message, **kwargs):
-    config = create_harp_config_with_sqlalchemy_storage_from_command_line_options(kwargs)
-    alembic_cfg = create_alembic_config(config.settings.get("storage", {}).get("url", None))
+    settings = create_harp_settings_with_storage_from_command_line_options(kwargs)
+    alembic_cfg = create_alembic_config(settings.get("storage").url)
     command.revision(alembic_cfg, autogenerate=True, message=message or "auto-generated migration")
+
+
+create_migration = cast(BaseCommand, create_migration)
+
+
+@click.command("db:merge")
+@add_harp_server_click_options
+@click.argument("message", nargs=1)
+@click.argument("revisions", nargs=-1)
+def run_db_merge_command(*, message, revisions, **kwargs):
+    settings = create_harp_settings_with_storage_from_command_line_options(kwargs)
+    alembic_cfg = create_alembic_config(settings.get("storage").url)
+    command.merge(alembic_cfg, message=message or "merge migration", revisions=revisions)
+
+
+run_db_merge_command = cast(BaseCommand, run_db_merge_command)
 
 
 @click.command("db:feature")
@@ -57,12 +74,12 @@ def create_migration(*, message, **kwargs):
 @click.argument("features", nargs=-1)
 @add_harp_server_click_options
 def feature(features, operation, **kwargs):
-    config = create_harp_config_with_sqlalchemy_storage_from_command_line_options(kwargs)
-    alembic_cfg = create_alembic_config(config.settings.get("storage", {}).get("url", None))
+    settings = create_harp_settings_with_storage_from_command_line_options(kwargs)
+    alembic_cfg = create_alembic_config(settings.get("storage").url)
 
     implementations = {}
     for feature in features:
-        _module = importlib.import_module(f"harp_apps.sqlalchemy_storage.optionals.{feature}")
+        _module = importlib.import_module(f"harp_apps.storage.optionals.{feature}")
         implementations[feature] = getattr(_module, upper_camel(feature + "_optional"))(
             alembic_cfg.get_main_option("sqlalchemy.url")
         )
@@ -76,9 +93,28 @@ def feature(features, operation, **kwargs):
             raise ValueError(f"Invalid operation {operation}.")
 
 
+feature = cast(BaseCommand, feature)
+
+
 @click.command("db:history")
 @add_harp_server_click_options
 def history(**kwargs):
-    config = create_harp_config_with_sqlalchemy_storage_from_command_line_options(kwargs)
-    alembic_cfg = create_alembic_config(config.settings.get("storage", {}).get("url", None))
+    settings = create_harp_settings_with_storage_from_command_line_options(kwargs)
+    alembic_cfg = create_alembic_config(settings.get("storage").url)
     command.history(alembic_cfg)
+
+
+history = cast(BaseCommand, history)
+
+
+@click.command("db:reset")
+@add_harp_server_click_options
+def reset(**kwargs):
+    settings = create_harp_settings_with_storage_from_command_line_options(kwargs)
+    alembic_cfg = create_alembic_config(settings.get("storage").url)
+    engine = create_async_engine(alembic_cfg.get_main_option("sqlalchemy.url"))
+
+    asyncio.run(do_reset(engine))
+
+
+reset = cast(BaseCommand, reset)

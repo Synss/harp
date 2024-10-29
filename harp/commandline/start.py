@@ -26,11 +26,23 @@ def assert_development_packages_are_available():
     short_help="Starts the local development environment.",
     help=f"""Starts the local development environment, using honcho to spawn a configurable set of processes that you
     can adapt to your needs. By default, it will starts the `dashboard` (frontend dev server) and `server` (python
-    server) processes. For live instances, you'll prefer {code('harp server')}.""",
+    server) processes. For live instances, you'll prefer {code("harp server")}.""",
 )
-@click.option("--with-docs/--no-docs", default=False, help="Append the sphinx doc process to the process list.")
-@click.option("--with-ui/--no-ui", default=False, help="Append the storybook process to the process list.")
-@click.option("--mock", is_flag=True, help="Enable mock data instead of real api data (dashboard only).")
+@click.option(
+    "--with-docs/--no-docs",
+    default=False,
+    help="Append the sphinx doc process to the process list.",
+)
+@click.option(
+    "--with-ui/--no-ui",
+    default=False,
+    help="Append the storybook process to the process list.",
+)
+@click.option(
+    "--mock",
+    is_flag=True,
+    help="Enable mock data instead of real api data (dashboard only).",
+)
 @click.option(
     "--server-subprocess",
     "-XS",
@@ -39,8 +51,8 @@ def assert_development_packages_are_available():
     multiple=True,
     help="Add a server subprocess to the list of services to start (experimental, can be used multiple times).",
 )
-@click.argument("services", nargs=-1)
 @add_harp_server_click_options
+@click.argument("services", nargs=-1)
 def start(with_docs, with_ui, services, server_subprocesses, mock, **kwargs):
     try:
         assert_development_packages_are_available()
@@ -68,7 +80,7 @@ def start(with_docs, with_ui, services, server_subprocesses, mock, **kwargs):
         more_env.setdefault(HARP_DASHBOARD_SERVICE, {})["DISABLE_MOCKS"] = "true"
 
     options = CommonServerOptions(**kwargs)
-    _dashboard_devserver_port = options.options.get("dashboard.devserver_port", None)
+    _dashboard_devserver_port = options.options.get("dashboard.devserver.port", None)
 
     manager_factory = HonchoManagerFactory(
         proxy_options=options.as_list(),
@@ -81,13 +93,15 @@ def start(with_docs, with_ui, services, server_subprocesses, mock, **kwargs):
     if with_ui or HARP_UI_SERVICE in services:
         services.add(HARP_UI_SERVICE)
 
-    for _name, (_proxy_port, _cmd, _port) in parse_server_subprocesses_options(server_subprocesses).items():
-        if _name in services:
+    for _name, (_proxy_port, _path, _cmd, _port) in parse_server_subprocesses_options(server_subprocesses).items():
+        if _name in services or _name in manager_factory.names:
             raise click.UsageError(f"Duplicate process name: {_name}.")
         services.add(_name)
+        manager_factory.names.add(_name)
         manager_factory.proxy_ports[_name] = _proxy_port
         manager_factory.ports[_name] = _port
         manager_factory.commands[_name] = _cmd
+        manager_factory.cwds[_name] = _path
 
     # allow to limit the services to start
     if services:

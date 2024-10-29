@@ -6,6 +6,8 @@ Typing (harp.typing)
     :undoc-members:
     :show-inheritance:
 
+    .. inheritance-diagram:: harp.typing
+
 Submodules
 ----------
 
@@ -14,4 +16,3 @@ Submodules
 
     harp.typing.global_settings
     harp.typing.signs
-    harp.typing.storage

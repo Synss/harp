@@ -1,6 +1,7 @@
-from dataclasses import dataclass
+from typing import Optional
+
+from harp.config import Configurable
 
 
-@dataclass
-class SentrySettings:
-    dsn: str
+class SentrySettings(Configurable):
+    dsn: Optional[str] = None

@@ -153,7 +153,10 @@ class TestHttpRequestAsgiBridgeHeaders(BaseHttpRequestAsgiBridgeTest):
 
     def test_get_headers(self):
         bridge = self.create_bridge(headers=[(b"content-type", b"application/json"), (b"content-length", b"42")])
-        assert bridge.get_headers() == {"content-type": "application/json", "content-length": "42"}
+        assert bridge.get_headers() == {
+            "content-type": "application/json",
+            "content-length": "42",
+        }
 
 
 class TestHttpRequestAsgiBridgeBody(BaseHttpRequestAsgiBridgeTest):
@@ -176,7 +179,7 @@ class TestHttpRequestAsgiBridgeBody(BaseHttpRequestAsgiBridgeTest):
 
         chunks = []
         assert len(messages)
-        async for chunk in bridge.stream():
+        async for chunk in bridge.get_stream():
             chunks.append(chunk)
 
         assert b"".join(chunks) == b'{"foo": "bar"}'
@@ -192,7 +195,7 @@ class TestHttpRequestAsgiBridgeBody(BaseHttpRequestAsgiBridgeTest):
 
         chunks = []
         assert len(messages)
-        async for chunk in bridge.stream():
+        async for chunk in bridge.get_stream():
             chunks.append(chunk)
 
         assert b"".join(chunks) == b'{"foo": "bar"}'

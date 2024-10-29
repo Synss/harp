@@ -1,16 +1,32 @@
+import time
 import traceback
 from decimal import Decimal
 
 import orjson
 from whistle import IAsyncEventDispatcher
 
-from harp.asgi.events import EVENT_CONTROLLER_VIEW, ControllerViewEvent
+from harp.asgi.events import EVENT_CORE_VIEW, ViewEvent
 from harp.http import HttpResponse
+
+STRINGIFIABLES = (Decimal,)
+
+try:
+    from freezegun.api import FakeDatetime
+
+    STRINGIFIABLES += (FakeDatetime,)
+except ImportError:
+    pass
+
+LISTIFIABLES = (set,)
 
 
 def default(obj):
-    if isinstance(obj, Decimal):
+    if isinstance(obj, time.struct_time):
+        return time.strftime("%Y-%m-%d %H:%M:%S", obj)
+    if isinstance(obj, STRINGIFIABLES):
         return str(obj)
+    if isinstance(obj, LISTIFIABLES):
+        return list(sorted(obj))
     raise TypeError
 
 
@@ -28,15 +44,19 @@ class json(dict):
     pass
 
 
-async def on_json_response(event: ControllerViewEvent):
+def serialize(value):
+    return orjson.dumps(
+        value,
+        option=orjson.OPT_NON_STR_KEYS | orjson.OPT_NAIVE_UTC,
+        default=default,
+    )
+
+
+async def on_json_response(event: ViewEvent):
     if isinstance(event.value, json):
         content_type = "application/json"
         try:
-            serialized = orjson.dumps(
-                event.value,
-                option=orjson.OPT_NON_STR_KEYS | orjson.OPT_NAIVE_UTC,
-                default=default,
-            )
+            serialized = serialize(event.value)
             event.set_response(
                 HttpResponse(serialized, status=200, content_type=content_type),
             )
@@ -59,4 +79,4 @@ async def on_json_response(event: ControllerViewEvent):
 
 
 def register(dispatcher: IAsyncEventDispatcher):
-    dispatcher.add_listener(EVENT_CONTROLLER_VIEW, on_json_response)
+    dispatcher.add_listener(EVENT_CORE_VIEW, on_json_response)

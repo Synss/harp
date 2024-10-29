@@ -1,30 +1,19 @@
-Contributor's Guide
-===================
+Contributor Guide
+=================
 
-This guide will guide you through the process of either contributing to harp, or extending it with your own apps.
+This guide will help you either contribute to HARP Proxy or extend it by writing your own applications. Most core
+features of HARP are implemented as such, making your own applications as powerful as the core ones.
 
-Harp development process heavily depends on containers, you should have a working docker environment first.
+You can also contribute to HARP without writing code: send feedback, proofread documentation, join `discussions
+<https://github.com/msqd/harp/discussions>`_ on GitHub, report issues, sponsor the project, or suggest new features.
 
-.. toctree::
-    :maxdepth: 2
+Don't hesitate to `reach out <https://harp-proxy.net/contact>`_ to us!
 
-    introduction
-    extending
-    applications/index
-    storage/index
-    ../apps/dashboard/development/index
-    testing/index
-    release/index
+.. table::
+    :class: guide-intro
+    :widths: 30 70
 
-Releases, Changes and Roadmap
-:::::::::::::::::::::::::::::
-
-.. toctree::
-    :maxdepth: 2
-
-    changelogs/index
-    roadmap
-    ideas
-
-
-.. todo:: move changelog to root, it' for more people than contributors, no need to hide it here.
+    +---------------------------------------+-------------------------------------------------------------------------+
+    | .. figure:: contributor-guide.jpg     | .. include:: _toc.rst                                                   |
+    |    :alt: HARP Proxy Contributor Guide |                                                                         |
+    +---------------------------------------+-------------------------------------------------------------------------+

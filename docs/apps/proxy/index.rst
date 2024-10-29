@@ -1,25 +1,70 @@
 Proxy
 =====
 
-The `harp_apps.proxy` application implements the core harp proxy features.
+.. tags:: applications
 
-Loading
-:::::::
+.. versionadded:: 0.5
 
-The proxy application is loaded by default when using the `harp start` command.
+The ``harp_apps.proxy`` application provides the core proxy features for HARP and includes the configuration logic for
+endpoints (the mapping between local ports and remote urls, including how to handle them).
+
+.. toctree::
+    :hidden:
+    :maxdepth: 1
+
+    Events <events>
+    Settings <settings>
+    Internals </reference/apps/harp_apps.proxy>
+
+
+Setup
+:::::
+
+The proxy application is enabled by default when using the harp start ... or harp server ... commands. You can disable
+it with the --disable proxy option, although this will most probably result in an useless system.
 
 
 Configuration
 :::::::::::::
 
-.. literalinclude:: ./examples/swapi.yml
+Minimal example
+---------------
+
+.. literalinclude:: ./examples/full-shorthand.yml
     :language: yaml
 
-Proxy endpoints are the remote APIs that your proxy will serve. Each endpoint have a local port, a name, and a base URL.
+.. seealso::
 
-Internal implementation: :class:`ProxySettings <harp_apps.proxy.settings.ProxySettings>`,
-:class:`ProxyEndpointSetting <harp_apps.proxy.settings.ProxyEndpointSetting>`
+    :doc:`📃 Proxy Configuration Reference <settings>`
 
+
+Full example
+------------
+
+.. literalinclude:: ./examples/full.yml
+    :language: yaml
+
+.. seealso::
+
+    :doc:`📃 Proxy Configuration Reference <settings>`
+
+
+Command line
+::::::::::::
+
+It is also possible to add endpoints using the command line. This is available for quick tests but should not be used as
+a permanent solution.
+
+.. code-block:: bash
+
+    harp start --endpoint starwars=1234:https://swapi.dev/
+
+.. warning::
+
+    The current CLI syntax is hackish and limited, the syntax will most probably change in the future.
+
+You can use multiple ``--endpoint ...`` arguments and the option is available for all server-like commands
+(``harp start ...``, ``harp server ...``, ...).
 
 .. warning::
 

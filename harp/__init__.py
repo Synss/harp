@@ -29,10 +29,15 @@ Contents
 
 import os
 from subprocess import check_output
+from typing import TYPE_CHECKING
 
 from packaging.version import InvalidVersion, Version
 
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if TYPE_CHECKING:
+    from harp.config import ConfigurationBuilder as _ConfigurationBuilder
+
+
+ROOT_DIR: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def _parse_version(version: str, /, *, default=None) -> Version:
@@ -46,7 +51,8 @@ def _parse_version(version: str, /, *, default=None) -> Version:
 
 # last release
 __title__ = "Core"
-__version__ = "0.5.0b12"
+__version__ = "0.7.2"
+__hardcoded_version__ = __version__
 __revision__ = __version__  # we can't commit the not yet known revision
 
 # override with version.txt if available (after docker build for example)
@@ -68,28 +74,32 @@ if not os.environ.get("CI", False) and os.path.exists(os.path.join(ROOT_DIR, ".g
         __version__ = __revision__[:7]
 
 from ._logging import get_logger  # noqa: E402, isort: skip
-from harp.config import Config  # noqa: E402, isort: skip
 
 
-def run(config: Config):
+async def arun(builder: "_ConfigurationBuilder"):
+    from harp.config.adapters.hypercorn import HypercornAdapter
+
+    system = await builder.abuild_system()
+    server = HypercornAdapter(system)
+    try:
+        return await server.serve()
+    finally:
+        await system.dispose()
+
+
+def run(builder: "_ConfigurationBuilder"):
     """
     Run the default server using provided configuration.
 
-    :param config: Config
+    :param builder: Config
     :return:
     """
     import asyncio
 
-    from harp.config.adapters.hypercorn import HypercornAdapter
-    from harp.config.factories.kernel_factory import KernelFactory
-
-    factory = KernelFactory(config)
-    server = HypercornAdapter(factory)
-    return asyncio.run(server.serve())
+    return asyncio.run(arun(builder))
 
 
 __all__ = [
-    "Config",
     "ROOT_DIR",
     "__revision__",
     "__version__",

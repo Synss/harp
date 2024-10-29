@@ -6,14 +6,19 @@ Dashboard (harp_apps.dashboard)
     :undoc-members:
     :show-inheritance:
 
+    .. inheritance-diagram:: harp_apps.dashboard
+
 Submodules
 ----------
 
 .. toctree::
     :maxdepth: 1
 
+    harp_apps.dashboard.conftest
+    harp_apps.dashboard.constants
     harp_apps.dashboard.controllers
     harp_apps.dashboard.filters
     harp_apps.dashboard.schemas
+    harp_apps.dashboard.security
     harp_apps.dashboard.settings
     harp_apps.dashboard.utils

@@ -1,0 +1,135 @@
+#! /usr/bin/env python
+
+import glob
+import os
+from shutil import copyfile
+
+import pyheck
+
+from harp import ROOT_DIR, get_logger
+from harp.config import asdict
+from harp.utils.config import yaml
+from harp.utils.typescript import generate_schema, generate_typescript_and_jsonschema
+
+logger = get_logger(__name__)
+
+
+def generate_typescript_definitions_for_application(
+    application_name, *, destination, schema_destination, namespace=None
+):
+    """
+    Generate TypeScript definitions and JSON schema for a given application.
+
+    Args:
+        application_name (str): The name of the application.
+        destination (str): The destination path for the TypeScript definitions.
+        schema_destination (str): The destination path for the JSON schema.
+        namespace (str, optional): The namespace to use in the TypeScript definitions.
+
+    """
+    models = []
+    for file in glob.glob(f"harp_apps/{application_name}/**/*.py", root_dir=ROOT_DIR, recursive=True):
+        mod_path, _ = os.path.splitext(file)
+        mod_path = mod_path.split(os.sep)
+        if mod_path[-1] == "__init__":
+            mod_path = mod_path[:-1]
+        if (
+            "tests" in mod_path
+            or "node_modules" in mod_path
+            or (mod_path[-1].startswith("__") and mod_path[-1].endswith("__"))
+        ):
+            continue
+        mod_fullpath = ".".join(mod_path)
+        mod_path, mod_name = mod_fullpath.rsplit(".", 1)
+        try:
+            module = getattr(__import__(mod_path, fromlist=[mod_name]), mod_name)
+        except Exception as e:
+            logger.debug(f"{mod_fullpath} (skip: {e})")
+            continue
+        for name in dir(module):
+            # ignore private
+            if name.startswith("_"):
+                continue
+
+            obj = getattr(module, name)
+
+            # ignore non-type
+            if not isinstance(obj, type):
+                logger.debug(f"{mod_fullpath}.{name} (skip: not a type)")
+                continue
+
+            # ignore non local
+            if obj.__module__ != mod_fullpath:
+                logger.debug(f"{mod_fullpath}.{name} (skip: non local)")
+                continue
+
+            if not hasattr(obj, "model_json_schema"):
+                logger.debug(f"{mod_fullpath}.{name} (skip: no json schema generator)")
+                continue
+
+            models.append(obj)
+
+    schema = generate_schema(models)
+    with generate_typescript_and_jsonschema(schema, namespace=namespace) as (ts_filename, schema_filename):
+        copyfile(ts_filename, destination)
+        copyfile(schema_filename, schema_destination)
+
+
+if __name__ == "__main__":
+    for app in ("dashboard", "http_client", "proxy", "storage"):
+        generate_typescript_definitions_for_application(
+            app,
+            destination=os.path.join(ROOT_DIR, f"harp_apps/dashboard/frontend/types/harp_apps.{app}.d.ts"),
+            schema_destination=os.path.join(ROOT_DIR, f"harp_apps/{app}/docs/schema.json"),
+            namespace="Apps." + pyheck.upper_camel(app),
+        )
+
+    # Generate reference YAML configuration for HttpClientSettings
+    from harp_apps.http_client.settings import HttpClientSettings
+
+    with open(os.path.join(ROOT_DIR, "harp_apps/http_client/docs/examples/reference.yml"), "w+") as f:
+        f.write(yaml.dump({"http_client": asdict(HttpClientSettings(), verbose=True)}))
+
+    # Generate reference YAML configuration for ProxySettings
+    from harp_apps.proxy.settings import (
+        EndpointSettings,
+        ProxySettings,
+        RemoteEndpointSettings,
+        RemoteProbeSettings,
+        RemoteSettings,
+    )
+
+    with open(os.path.join(ROOT_DIR, "harp_apps/proxy/docs/examples/reference.yml"), "w+") as f:
+        f.write(
+            yaml.dump(
+                {
+                    "proxy": asdict(
+                        ProxySettings(
+                            endpoints=[
+                                EndpointSettings(
+                                    name="my-endpoint",
+                                    port=4000,
+                                    remote=RemoteSettings(
+                                        endpoints=[RemoteEndpointSettings(url="https://httpbin.org/")],
+                                        probe=RemoteProbeSettings(),
+                                    ),
+                                )
+                            ]
+                        ),
+                        verbose=True,
+                    )
+                }
+            )
+        )
+
+    # Generate reference YAML configuration for StorageSettings
+    from harp_apps.storage.settings import StorageSettings
+
+    with open(os.path.join(ROOT_DIR, "harp_apps/storage/docs/examples/reference.yml"), "w+") as f:
+        f.write(yaml.dump({"storage": asdict(StorageSettings(), verbose=True)}))
+
+    # Generate reference YAML configuration for DashboardSettings
+    from harp_apps.dashboard.settings import DashboardSettings
+
+    with open(os.path.join(ROOT_DIR, "harp_apps/dashboard/docs/examples/reference.yml"), "w+") as f:
+        f.write(yaml.dump({"dashboard": asdict(DashboardSettings(), verbose=True)}))

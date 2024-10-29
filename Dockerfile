@@ -1,7 +1,7 @@
 ################################################################################
 # IMAGE: Base build image
 #
-FROM python:3.12-slim as base
+FROM python:3.12-slim AS base
 
 ENV PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=on \
@@ -41,11 +41,21 @@ WORKDIR /opt/harp
 ################################################################################
 # IMAGE: Backend builder image (install prod deps in a virtualenv ready to be copied to runtime)
 #
-FROM base as backend
+FROM base AS backend
+
+# Step: Add system build dependencies
+USER root
+WORKDIR /root
+RUN --mount=type=cache,target=/root/.cache,sharing=locked \
+    --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt-get update \
+    && apt-get install -y build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
 # Step: Add sources and install dependencies (prod)
 USER harp
 WORKDIR /opt/harp
+
 ADD --chown=harp:www-data . src
 
 # ... install
@@ -60,19 +70,18 @@ RUN rm -rf .cache
 ################################################################################
 # IMAGE: Development image (ability to use from sources, run tests, run dev servers ...)
 #
-FROM base as development
+FROM base AS development
 
 # Step: Add system build dependencies
 USER root
 WORKDIR /root
-
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     --mount=type=cache,target=/var/cache/apt,sharing=locked \
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && curl -sSL https://get.docker.com/ | sh \
     && apt-get install -y build-essential \
     && apt-get install -y nodejs \
-    && apt-get install -y vim net-tools iputils-ping netcat-openbsd bind9-host \
+    && apt-get install -y vim net-tools iputils-ping netcat-openbsd bind9-host jq \
     && rm -rf /var/lib/apt/lists/* \
     && npm install -g pnpm
 
@@ -96,7 +105,7 @@ RUN rm -rf .cache
 ################################################################################
 # IMAGE: Frontend builder image (ability to compile frontend app into production version)
 #
-FROM base as frontend
+FROM base AS frontend
 
 # Step: Add system build dependencies
 USER root
@@ -120,7 +129,7 @@ RUN (cd frontend; pnpm install; pnpm build)
 ################################################################################
 # IMAGE: Lightest possible image, with only production related abilities
 #
-FROM python:3.12-slim as runtime
+FROM python:3.12-slim AS runtime
 
 ENV PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=on \
@@ -161,11 +170,9 @@ COPY --from=backend --chown=harp:www-data ${BASE}/src ${BASE}/src
 
 RUN ln -s /var/lib/harp/data \
     && ln -s /etc/harp.yaml \
-    && mv src/bin/runtime ./bin \
-    && mv src/examples ./examples
+    && mv src/bin/runtime ./bin
 
 
-ENV DEFAULT__HARP__STORAGE__TYPE="sqlalchemy"
 ENV DEFAULT__HARP__STORAGE__URL="sqlite+aiosqlite:///data/harp.db"
 
 EXPOSE 4080

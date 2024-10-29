@@ -9,6 +9,7 @@ Example usage:
 
     from harp.controllers import RoutingController, GetHandler
 
+
     class MyController(RoutingController):
         @GetHandler("/")
         async def index(self):
@@ -36,14 +37,14 @@ from .routing import (
     RoutingController,
     TraceHandler,
 )
-from .typing import ControllerResolver
+from .typing import IControllerResolver
 
 __title__ = "Controllers"
 
 __all__ = [
     "AnyMethodHandler",
     "ConnectHandler",
-    "ControllerResolver",
+    "IControllerResolver",
     "DefaultControllerResolver",
     "DeleteHandler",
     "GetHandler",

@@ -3,17 +3,17 @@ Initial implementation : https://trello.com/c/yCdcY7Og/1-5-http-proxy
 """
 
 import os
+from http import HTTPStatus
 
 import pytest
 from httpx import AsyncClient
 
-from harp import Config
 from harp.asgi.kernel import ASGIKernel
-from harp.config.factories.kernel_factory import KernelFactory
+from harp.config import ConfigurationBuilder
 from harp.controllers import ProxyControllerResolver
 from harp.utils.testing.communicators import ASGICommunicator
-from harp.utils.testing.http import parametrize_with_http_methods, parametrize_with_http_status_codes
-from harp_apps.proxy.controllers import HttpProxyController
+from harp.utils.testing.http import parametrize_with_http_methods
+from harp_apps.proxy.settings import Endpoint
 
 
 class TestAsgiProxyWithoutEndpoints:
@@ -44,7 +44,17 @@ class TestAsgiProxyWithMissingStartup:
     @pytest.fixture
     def kernel(self, test_api):
         resolver = ProxyControllerResolver()
-        resolver.add(80, HttpProxyController(test_api.url, http_client=AsyncClient()))
+        http_client = AsyncClient()
+        resolver.add(
+            Endpoint.from_kwargs(
+                settings={
+                    "name": "test",
+                    "port": 80,
+                    "url": test_api.url,
+                }
+            ),
+            http_client=http_client,
+        )
         return ASGIKernel(resolver=resolver)
 
     @pytest.fixture
@@ -70,24 +80,30 @@ class TestAsgiProxyWithStubApi:
 
     @pytest.fixture
     async def kernel(self, test_api):
-        config = Config()
-
-        config.add_application("http_client")
-        config.add_application("proxy")
-        config.add_application("sqlalchemy_storage")
-
-        config.set(
-            "proxy.endpoints",
-            [
-                {
-                    "port": 80,
-                    "name": "test",
-                    "url": test_api.url,
+        builder = ConfigurationBuilder(use_default_applications=False)
+        builder.applications.add("http_client")
+        builder.applications.add("proxy")
+        builder.applications.add("storage")
+        builder.add_values(
+            {
+                "proxy": {
+                    "endpoints": [
+                        {
+                            "port": 80,
+                            "name": "test",
+                            "url": test_api.url,
+                        }
+                    ]
                 }
-            ],
+            }
         )
-        factory = KernelFactory(config)
-        return (await factory.build())[0]
+
+        system = await builder.abuild_system()
+
+        try:
+            yield system.kernel
+        finally:
+            await system.dispose()
 
     @pytest.fixture
     async def client(self, kernel):
@@ -103,7 +119,7 @@ class TestAsgiProxyWithStubApi:
         assert response["headers"] == ((b"content-type", b"text/html; charset=utf-8"),)
 
     async def test_head_request(self, client: ASGICommunicator):
-        response = await client.asgi_http_head("/echo")
+        response = await client.http_head("/echo")
         assert response["status"] == 200
         assert response["body"] == b""
         assert response["headers"] == ((b"content-type", b"text/html; charset=utf-8"),)
@@ -130,13 +146,18 @@ class TestAsgiProxyWithStubApi:
         assert len(response["body"]) == 32
         assert response["headers"] == ((b"content-type", b"application/octet-stream"),)
 
-    @parametrize_with_http_status_codes(include=(2, 3, 4, 5))
     @parametrize_with_http_methods(exclude={"CONNECT", "HEAD"})
-    async def test_response_status(self, client: ASGICommunicator, method, status_code):
-        response = await client.http_request(method, f"/status/{status_code}")
-        assert response["status"] == status_code
+    async def test_response_status(self, client: ASGICommunicator, method):
+        statuses = list(map(lambda x: x.value, HTTPStatus))
+        statuses = list(filter(lambda x: x // 100 in (2, 3, 4, 5), statuses))
+        for status_code in statuses:
+            response = await client.http_request(method, f"/status/{status_code}")
+            assert response["status"] == status_code
 
     @parametrize_with_http_methods(exclude={"CONNECT", "HEAD"})
     async def test_headers(self, client: ASGICommunicator, method):
         response = await client.http_request(method, "/headers")
-        assert response["headers"] == ((b"x-foo", b"Bar"), (b"content-type", b"application/octet-stream"))
+        assert response["headers"] == (
+            (b"x-foo", b"Bar"),
+            (b"content-type", b"application/octet-stream"),
+        )

@@ -6,12 +6,15 @@ Command Line (harp.commandline)
     :undoc-members:
     :show-inheritance:
 
+    .. inheritance-diagram:: harp.commandline
+
 Submodules
 ----------
 
 .. toctree::
     :maxdepth: 1
 
+    harp.commandline.cookiecutters
     harp.commandline.install
     harp.commandline.migrations
     harp.commandline.options

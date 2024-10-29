@@ -1,9 +1,23 @@
 Dashboard
 =========
 
-The `harp_apps.dashboard` application implements the administrative api and micro-frontend.
+.. tags:: applications
 
-If enabled, a server will be available (by default, on port `4080`) to observe whatever goes through the proxy.
+.. versionadded:: 0.5
+
+The ``harp_apps.dashboard`` application implements the administrative api and micro-frontend.
+
+If enabled, a server will be available (by default, on port `4080`) to access the :doc:`HARP Dashboard
+</features/dashboard>` and observe whatever goes through the proxy.
+
+.. toctree::
+    :hidden:
+    :maxdepth: 1
+
+    Services <services>
+    Settings <settings>
+    Internals </reference/apps/harp_apps.dashboard>
+
 
 Loading
 :::::::

@@ -2,9 +2,6 @@
 NAME ?= harp-proxy
 VERSION ?= $(shell git describe 2>/dev/null || git rev-parse --short HEAD)
 
-# pre commit
-PRE_COMMIT ?= $(shell which pre-commit || echo "pre-commit")
-
 # poetry
 POETRY ?= $(shell which poetry || echo "poetry")
 POETRY_INSTALL_OPTIONS ?=
@@ -28,7 +25,7 @@ DOCKER_TAGS ?=
 DOCKER_TAGS_SUFFIX ?=
 DOCKER_BUILD_OPTIONS ?= --platform=$(PLATFORM)
 DOCKER_BUILD_TARGET ?= runtime
-DOCKER_NETWORK ?= bridge
+DOCKER_NETWORK ?= harp
 DOCKER_RUN_COMMAND ?=
 DOCKER_RUN_OPTIONS ?=
 
@@ -38,16 +35,22 @@ PNPM ?= $(shell which pnpm || echo "pnpm")
 # misc.
 SED ?= $(shell which gsed || which sed || echo "sed")
 TESTC_COMMAND ?= poetry shell
+TEST_SKIP_FRONT ?=
 
 # constants
 FRONTEND_DIR = harp_apps/dashboard/frontend
 
 # default run options
-HARP_OPTIONS ?= --file examples/sqlite.yml --file examples/httpbin.yml
+HARP_OPTIONS ?= --example sqlite --example proxy:httpbin
+HARP_MORE_OPTIONS ?=
+HARP_SERVICES ?= server dashboard
 
-.PHONY: start-dev
-start-dev:  # Starts a development instance with reasonable defaults (tune HARP_OPTIONS to replace).
-	$(POETRY) run harp start $(HARP_OPTIONS)
+.PHONY: start-dev start-dev-frontend
+start-dev: install-dev  # Starts a development instance with reasonable defaults (tune HARP_OPTIONS to replace).
+	$(POETRY) run harp start $(HARP_SERVICES) $(HARP_OPTIONS) $(HARP_MORE_OPTIONS)
+
+start-dev-frontend: install-dev  # Starts a frontend development instance with reasonable defaults (you'll have to a backend, useful to use an external debugger for example).
+	HARP_SERVICES=dashboard HARP_MORE_OPTIONS="--set dashboard.devserver.port=12121" $(MAKE) start-dev
 
 
 ########################################################################################################################
@@ -79,13 +82,16 @@ wheel:
 # Documentation
 ########################################################################################################################
 
-.PHONY: reference
+.PHONY: reference docs
 
 reference: harp  ## Generates API reference documentation as ReST files (docs).
 	rm -rf docs/reference/core docs/reference/apps
 	mkdir -p docs/reference/core docs/reference/apps
 	$(RUN) bin/generate_apidoc
 	git add docs/reference/
+
+docs:  ## Build html documentation
+	(cd docs; $(MAKE) html)
 
 
 ########################################################################################################################
@@ -102,21 +108,28 @@ build-frontend:  ## Builds the harp dashboard frontend (compiles typescript and 
 # QA, tests and other CI/CD related stuff
 ########################################################################################################################
 
-.PHONY: preqa qa qa-full types format format-backend format-frontend
+.PHONY: preqa qa qa-full types format format-backend format-frontend optimize-images
 .PHONY: test test-backend test-frontend test-frontend-update test-frontend-ui-update
 .PHONY: lint-frontend coverage cloc
 
 preqa: types format reference  ## Runs pre-qa checks (types generation, formatting, api reference).
+	-$(RUN) pre-commit
 
 qa: preqa test  ## Runs all QA checks, with most common databases.
 
 qa-full:  ## Runs all QA checks, including all supported databases.
 	TEST_ALL_DATABASES=true $(MAKE) qa
 
-types:  ## Generates frontend types from the python code.
-	$(RUN) bin/generate_types
+qa-nofront:
+	TEST_SKIP_FRONT=1 $(MAKE) qa
 
-format: format-backend format-frontend  ## Formats the full codebase (backend and frontend).
+types:  ## Generates frontend types from the python code.
+	$(RUN) bin/generate_types # old school
+	$(RUN) bin/generate_ts_types # new school
+
+format:  ## Formats the full codebase (backend and frontend).
+	$(MAKE) format-backend
+	test -z "$(TEST_SKIP_FRONT)" && $(MAKE) format-frontend || (cd $(FRONTEND_DIR); $(PNPM) prettier -w src/Models)
 
 format-backend:  ## Formats the backend codebase.
 	$(RUN) isort harp harp_apps tests
@@ -128,9 +141,12 @@ format-frontend: install-frontend  ## Formats the frontend codebase.
 	(cd $(FRONTEND_DIR); $(PNPM) lint:fix)
 	(cd $(FRONTEND_DIR); $(PNPM) prettier -w src)
 
+optimize-images:
+	find docs -name \*.png | xargs optimizt
+
 test:  ## Runs all tests.
 	$(MAKE) test-backend
-	$(MAKE) test-frontend
+	test -z "$(TEST_SKIP_FRONT)" && $(MAKE) test-frontend || echo "Skipped."
 
 test-backend: install-backend-dev  ## Runs backend tests.
 	$(PYTEST) $(PYTEST_TARGETS) \
@@ -215,7 +231,7 @@ runc-shell:  ## Runs a shell within the docker image.
 	$(DOCKER) run -it --network $(DOCKER_NETWORK) $(DOCKER_OPTIONS) $(DOCKER_RUN_OPTIONS) -p 4080:4080 --rm --entrypoint=/bin/bash $(DOCKER_IMAGE) $(DOCKER_RUN_COMMAND)
 
 runc-example-repositories:  ## Runs harp with the "repositories" example within the docker image.
-	$(DOCKER) run -it --network $(DOCKER_NETWORK) $(DOCKER_OPTIONS) $(DOCKER_RUN_OPTIONS) -p 4080:4080 -p 9001-9012:9001-9012 --rm $(DOCKER_IMAGE) --file examples/repositories.yml --set storage.url postgresql+asyncpg://harp:harp@harp-postgres-1/repositories
+	$(DOCKER) run -it --network $(DOCKER_NETWORK) $(DOCKER_OPTIONS) $(DOCKER_RUN_OPTIONS) -p 4080:4080 -p 9001-9012:9001-9012 --rm $(DOCKER_IMAGE) --example repositories --set storage.url postgresql+asyncpg://harp:harp@harp-postgres-1/repositories
 
 
 .PHONY: buildc-dev pushc-dev runc-dev runc-dev-shell
@@ -243,7 +259,7 @@ testc-shell:  ## Runs a shell in the development test suite environment.
 	$(DOCKER) rm docker
 
 testc-backend:  ## Runs the backend test suite within the development docker image, with a docker in docker sidecar service.
-	DOCKER_OPTIONS="-e DOCKER_HOST=tcp://docker:2375/" TESTC_COMMAND="PYTEST_CPUS=2 make test-backend" $(MAKE) testc-shell
+	DOCKER_OPTIONS="-e DOCKER_HOST=tcp://docker:2375/" TESTC_COMMAND="PYTEST_OPTIONS=-vv poetry run make test-backend" $(MAKE) testc-shell
 
 
 ########################################################################################################################
@@ -262,11 +278,11 @@ clean-frontend-modules:  ## Cleans up the frontend node modules directory.
 	-rm -rf $(FRONTEND_DIR)/node_modules
 
 clean-dist:  ## Cleans up the distribution files (wheels...)
+	-rm -rf $(FRONTEND_DIR)/dist
 	-rm -rf dist
 
 clean-docs:  ## Cleanup the documentation builds.
 	-rm -rf docs/_build
 
 clean: clean-frontend-modules clean-dist clean-docs  ## Cleans up the project.
-	-rm -rf $(FRONTEND_DIR)/dist
 	-rm -f benchmark_*.svg

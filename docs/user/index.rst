@@ -1,15 +1,13 @@
-User's Guide
-============
+User Guide
+==========
 
-This guide intends to help dashboard users to understand the user interface elements and the metrics meaning.
+This guide intends to help **dashboard users** to understand the **user interface** elements and the **metrics** meaning.
 
-.. toctree::
-   :maxdepth: 1
+.. table::
+    :class: guide-intro
+    :widths: 30 70
 
-   overview
-   transactions
-   system
-   performances
-
-
-.. todo:: screenshots
+    +------------------------------------+-----------------------------------------------------------------------------+
+    | .. figure:: user-guide.jpg         | .. include:: _toc.rst                                                       |
+    |    :alt: HARP Proxy User's Guide   |                                                                             |
+    +------------------------------------+-----------------------------------------------------------------------------+

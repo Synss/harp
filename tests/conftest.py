@@ -1,12 +1,14 @@
 import asyncio
 import dataclasses
+from asyncio import get_running_loop
 
-import pytest
+import pytest  # noqa
 from hypercorn import Config
 from hypercorn.asyncio import serve
 
-from harp.utils.network import get_available_network_port
+from harp.utils.network import get_available_network_port, wait_for_port
 from harp.utils.testing.stub_api import stub_api
+from harp_apps.storage.conftest import *  # noqa
 
 
 @dataclasses.dataclass
@@ -19,20 +21,8 @@ class StubServerDescription:
         return f"http://{self.host}:{self.port}"
 
 
-@pytest.fixture(scope="session")
-def event_loop():
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-    try:
-        yield loop
-    finally:
-        loop.close()
-
-
-@pytest.fixture(scope="session")
-async def test_api(event_loop):
+@pytest.fixture
+async def test_api():
     shutdown_event = asyncio.Event()
     config = Config()
     host, port = "localhost", get_available_network_port()
@@ -45,10 +35,9 @@ async def test_api(event_loop):
             config=config,
             shutdown_trigger=shutdown_event.wait,
         ),
-        loop=event_loop,
+        loop=get_running_loop(),
     )
-    # wait for the server to be accepting connections
-    await asyncio.open_connection(host, port)
+    await asyncio.to_thread(wait_for_port, port, host)
 
     try:
         yield StubServerDescription(host, port)
