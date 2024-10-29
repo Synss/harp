@@ -32,7 +32,7 @@ class HttpProxyControllerTestFixtureMixin(ControllerTestFixtureMixin):
     @pytest.fixture(autouse=True)
     def setup(self):
         # forces the user agent to be a known value, even if versions are incremented
-        with patch("harp_apps.proxy.controllers.HttpProxyController.user_agent", "test/1.0"):
+        with patch("harp_apps.proxy.adapters.HttpClientProxyAdapter.user_agent", "test/1.0"):
             yield
 
     def mock_http_endpoint(self, url, /, *, status=200, content=""):
@@ -182,7 +182,7 @@ class TestHttpProxyControllerWithStorage(
 
         # request
         request_headers = await blob_storage.get(request.headers)
-        assert request_headers.data == b"host: example.com\nuser-agent: test/1.0"
+        assert request_headers.data == b""
         assert request_headers.content_type == "http/headers"
         assert (await blob_storage.get(request.body)).data == b""
         assert asdict(request) == {
@@ -190,7 +190,7 @@ class TestHttpProxyControllerWithStorage(
             "transaction_id": ANY,
             "kind": "request",
             "summary": "GET / HTTP/1.1",
-            "headers": "a11eda99171248663db8cf2ef3857f52a974ba94",
+            "headers": "916ef336ce8ac9a91de41ce88c4b4bfc747b3ac9",
             "body": "adc83b19e793491b1c6ea0fd8b46cd9f32e592fc",
             "created_at": ANY,
         }
@@ -248,9 +248,7 @@ class TestHttpProxyControllerWithStorage(
         }
 
         request_headers = await blob_storage.get(request.headers)
-        assert request_headers.data == (
-            b"accept: application/json\nvary: custom\nhost: example.com\nuser-agent: test/1.0"
-        )
+        assert request_headers.data == (b"accept: application/json\nvary: custom")
         assert request_headers.content_type == "http/headers"
         assert (await blob_storage.get(request.body)).data == b""
         assert asdict(request) == {
@@ -258,7 +256,7 @@ class TestHttpProxyControllerWithStorage(
             "transaction_id": ANY,
             "kind": "request",
             "summary": "GET / HTTP/1.1",
-            "headers": "74c903b455127bd235bb06e9e84151e9535c6389",
+            "headers": "62ccbc3696048078cc4ced90d9239c1d4abc9e49",
             "body": "adc83b19e793491b1c6ea0fd8b46cd9f32e592fc",
             "created_at": ANY,
         }
