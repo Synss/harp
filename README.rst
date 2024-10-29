@@ -17,6 +17,10 @@ To discuss issues, use cases, share your ideas, etc. you can join our `discord s
     :target: https://pypi.python.org/pypi/harp-proxy
     :alt: PyPI
 
+.. image:: https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/harp
+    :target: https://artifacthub.io/packages/search?repo=harp
+    :alt: Artifact Hub
+
 .. image:: https://www.gitlab.com/makersquad/oss/harp/badges/0.6/pipeline.svg
     :target: https://www.gitlab.com/makersquad/oss/harp/pipelines
     :alt: GitLab CI/CD Pipeline Status
