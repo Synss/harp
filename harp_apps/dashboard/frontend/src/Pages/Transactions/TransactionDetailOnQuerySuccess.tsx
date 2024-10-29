@@ -45,7 +45,7 @@ export function TransactionDetailOnQuerySuccess({ query }: { query: QueryObserve
         title={
           <div className="flex gap-x-0.5 items-center">
             <span className="grow">Transaction</span>
-            <CopyToClipboard text={transactionUrl} />
+            <CopyToClipboard text={transactionUrl} description="copy transaction link" className="font-light" />
             <Duration
               duration={duration}
               tpdex={tpdex}

@@ -16,8 +16,13 @@ export function MessageHeaders({ id }: MessageHeadersProps) {
 
   if (query && query.isSuccess && query.data !== undefined) {
     return (
-      <div>
-        <CopyToClipboard targetRef={ref} contentType="html" className="absolute right-2" />
+      <div className="flex space-y-2">
+        <CopyToClipboard
+          targetRef={ref}
+          contentType="text/html"
+          className="absolute right-2"
+          description="copy headers"
+        />
         <div ref={ref} className="pt-4">
           <table className="mb-2 w-full text-xs font-mono">
             <tbody>

@@ -17,7 +17,7 @@ export function PrettyBody({
   const contentAsString = decoder.decode(content!)
   const [visibleContent, setVisibleContent] = useState(contentAsString?.slice(0, 8000))
   const loadAllContent = () => setVisibleContent(contentAsString)
-
+  console.log(contentType)
   switch (contentType) {
     case "application/json":
       return (

@@ -1,17 +1,18 @@
 import { ClipboardDocumentIcon, ClipboardDocumentCheckIcon } from "@heroicons/react/24/outline"
 import { useState } from "react"
-
 import { classNames } from "ui/Utilities"
 
 interface CopyToClipboardProps {
   text?: string
   targetRef?: React.RefObject<HTMLElement>
   className?: string
-  contentType?: "text" | "html"
+  contentType?: string
+  description?: string
 }
 
-const CopyToClipboard: React.FC<CopyToClipboardProps> = ({ text, targetRef, className, contentType = "text" }) => {
+const CopyToClipboard: React.FC<CopyToClipboardProps> = ({ text, targetRef, className, contentType, description }) => {
   const [copySuccess, setCopySuccess] = useState(false)
+  const canCopy = navigator.clipboard
 
   const handleClipboardWrite = (clipboardData: string | ClipboardItem[]) => {
     const writePromise =
@@ -34,14 +35,14 @@ const CopyToClipboard: React.FC<CopyToClipboardProps> = ({ text, targetRef, clas
     if (text) {
       handleClipboardWrite(text)
     } else if (targetRef?.current) {
-      if (contentType === "html") {
+      if (contentType?.includes("html")) {
         const html = targetRef.current.innerHTML
-        const blob = new Blob([html], { type: "text/html" })
-        const data = [new ClipboardItem({ "text/html": blob })]
+        const blob = new Blob([html], { type: contentType })
+        const data = [new ClipboardItem({ [contentType]: blob })]
 
         handleClipboardWrite(data)
-      } else {
-        const text = targetRef.current.textContent || ""
+      } else if (contentType?.startsWith("text/") || contentType?.startsWith("application/")) {
+        const text = targetRef.current.innerText || ""
         handleClipboardWrite(text)
       }
     }
@@ -49,13 +50,17 @@ const CopyToClipboard: React.FC<CopyToClipboardProps> = ({ text, targetRef, clas
 
   const Icon = copySuccess ? ClipboardDocumentCheckIcon : ClipboardDocumentIcon
 
-  return (
-    <Icon
-      title="Copy to clipboard"
-      className={classNames(className, `m-2 h-4 w-4 cursor-pointer ${copySuccess ? "text-blue-300" : "text-gray-500"}`)}
-      onClick={handleCopy}
-    />
-  )
+  return canCopy && (!contentType || contentType.startsWith("text/") || contentType.startsWith("application/")) ? (
+    <div className={classNames("flex items-center -space-x-1 text-xs", className)} onClick={handleCopy}>
+      {description && (
+        <span className={`m-2 cursor-pointer ${copySuccess ? "text-blue-300" : "text-gray-500"}`}>{description}</span>
+      )}
+      <Icon
+        title="Copy to clipboard"
+        className={`m-2 h-4 w-4 cursor-pointer ${copySuccess ? "text-blue-300" : "text-gray-500"}`}
+      />
+    </div>
+  ) : null
 }
 
 export default CopyToClipboard

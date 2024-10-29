@@ -12,10 +12,14 @@ export function MessageBody({ id }: { id: string }) {
   if (query && query.isSuccess && query.data !== undefined) {
     if (query.data.content.byteLength) {
       return (
-        <div>
-          <CopyToClipboard targetRef={ref} contentType="html" className="absolute right-2" />
-
-          <div className="px-2 pt-4" ref={ref}>
+        <div className="flex space-y-2">
+          <CopyToClipboard
+            targetRef={ref}
+            contentType={query.data.contentType}
+            className="absolute right-2"
+            description="copy content"
+          />
+          <div className="px-2 pt-4 mt-4" ref={ref}>
             <PrettyBody content={query.data.content} contentType={query.data.contentType} />
           </div>
         </div>
