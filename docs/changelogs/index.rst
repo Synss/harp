@@ -5,6 +5,8 @@ Changelogs & History
     :maxdepth: 1
 
     unreleased
+    0.7.4
+    0.7.3
     0.7.2
     0.7.1
     0.7.0

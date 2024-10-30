@@ -91,3 +91,9 @@ Tag and push
 .. code-block:: shell
 
     git push origin `git rev-parse --abbrev-ref HEAD` --tags
+
+
+Eventually forward-port the new version
+:::::::::::::::::::::::::::::::::::::::
+
+If a newer version line is available, checkout and merge the new version into it.
