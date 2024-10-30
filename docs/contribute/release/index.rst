@@ -13,3 +13,5 @@ Releasing
     chores
     sources
     python
+    helm
+    bump

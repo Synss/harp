@@ -82,7 +82,7 @@ wheel:
 # Documentation
 ########################################################################################################################
 
-.PHONY: reference docs
+.PHONY: reference docs docs-dev
 
 reference: harp  ## Generates API reference documentation as ReST files (docs).
 	rm -rf docs/reference/core docs/reference/apps
@@ -91,7 +91,10 @@ reference: harp  ## Generates API reference documentation as ReST files (docs).
 	git add docs/reference/
 
 docs:  ## Build html documentation
-	(cd docs; $(MAKE) html)
+	$(RUN) $(MAKE) -C docs html
+
+docs-dev:  ## Spin up a livereload documentation server
+	$(RUN) $(MAKE) -C docs dev
 
 
 ########################################################################################################################

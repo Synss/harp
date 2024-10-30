@@ -1,6 +1,11 @@
 Unreleased
 ==========
 
+Added
+:::::
+
+* DX: Helm chart for Kubernetes is now published and a minimal documentation is available.
+
 Changed
 :::::::
 
