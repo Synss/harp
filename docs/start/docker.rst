@@ -75,7 +75,7 @@ Then add the following to your `docker-compose.yml` file:
 
     services:
       harp:
-        image: makersquad/harp-proxy:git-dev
+        image: makersquad/harp-proxy
         volumes:
           - "./harp.yaml:/etc/harp.yaml"
           - "./harp-data:/var/lib/harp/data"
