@@ -4,15 +4,37 @@ import orjson
 
 from harp_apps.rules.constants import DEFAULT_LEVELS, DEFAULT_RULES_LEVELS
 from harp_apps.rules.models.compilers import BaseRuleSetCompiler
+from harp_apps.rules.models.patterns import Pattern
+
+
+DEFAULT_RULE_MATCHER = Pattern("__default__")
+
+
+class Itemize:
+    def __init__(self, seq) -> None:
+        self._seq = seq
+
+    def __iter__(self):
+        try:
+            return iter(self._seq.items())
+        except AttributeError:
+            return iter(self._seq)
 
 
 def _match_level(rules, against):
+    default = None
+    has_match = False
     for pattern, rules in rules:
+        if pattern == DEFAULT_RULE_MATCHER:
+            default = rules
+            continue
+
         if pattern.match(against):
-            if hasattr(rules, "items"):
-                yield from rules.items()
-            else:
-                yield from rules
+            has_match = True
+            return Itemize(rules)
+
+    if not has_match and default:
+        return Itemize(default)
 
 
 def _rules_as_human_dict(rules: dict, *, show_scripts=True):

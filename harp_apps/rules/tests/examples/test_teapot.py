@@ -19,12 +19,24 @@ class TestTeapotExample:
         settings = RulesSettings(**self.source)
         return settings.ruleset
 
+    def test_on_proxy_no_match_gets_default(self):
+        rules = self.get_rules()
+        event = self.create_proxy_filter_event("proxy.filter.request", endpoint="xxx*", request=self.create_request())
+
+        scripts = list(rules.match(*event.criteria))
+        assert len(scripts) == 1
+        assert "I'm the fallback for acme." in scripts[0].source
+
+        event.execute_script(scripts[0])
+        assert event.response.status == 418
+
     def test_on_proxy_filter_request(self):
         rules = self.get_rules()
         event = self.create_proxy_filter_event("proxy.filter.request", endpoint="acme1", request=self.create_request())
 
         scripts = list(rules.match(*event.criteria))
         assert len(scripts) == 1
+        assert "I'm a teapot." in scripts[0].source
 
         event.execute_script(scripts[0])
         assert event.response.status == 418

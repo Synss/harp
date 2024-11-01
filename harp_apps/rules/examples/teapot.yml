@@ -5,3 +5,9 @@ rules:
       on_request: |
         from harp.http import HttpResponse
         response = HttpResponse("I'm a teapot.", status=418)
+  "__default__":
+    "GET /*":
+      # language=python
+      on_request: |
+        from harp.http import HttpResponse
+        response = HttpResponse("I'm the fallback for acme.", status=418)
