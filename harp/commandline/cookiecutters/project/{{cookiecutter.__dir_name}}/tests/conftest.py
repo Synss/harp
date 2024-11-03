@@ -1,11 +1,13 @@
-import pytest
-from subprocess import Popen, PIPE
-from http.client import HTTPConnection
 import time
+from http.client import HTTPConnection
+from subprocess import PIPE, Popen
+
+import pytest
+
 
 @pytest.fixture(scope="session")
 def process():
-    process = Popen( ["make", "start"], stdout=PIPE)
+    process = Popen(["make", "start"], stdout=PIPE)
     retries = 5
     while retries > 0:
         conn = HTTPConnection("localhost:4080")
