@@ -71,7 +71,7 @@ First, create a configuration file:
 
 Then run the container again, binding it to ``/etc/harp.yaml``:
 
-.. code:: yaml
+.. code:: shell
 
     docker run -it --rm -p 4000-4100:4000-4100 --volume $(pwd)/harp.yaml:/etc/harp.yaml makersquad/harp-proxy server
 
