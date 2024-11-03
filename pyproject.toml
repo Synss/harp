@@ -135,3 +135,4 @@ filterwarnings = [
     "ignore:pkg_resources is deprecated as an API:DeprecationWarning",
 ]
 markers = ["subprocess"]
+addopts = "--ignore harp/commandline/cookiecutters"
