@@ -1413,18 +1413,17 @@ hyperframe = ">=6.0,<7"
 
 [[package]]
 name = "hishel"
-version = "0.0.33"
+version = "0.1.1"
 description = "Persistent cache implementation for httpx and httpcore"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 files = [
-    {file = "hishel-0.0.33-py3-none-any.whl", hash = "sha256:6e6c6cdaf432ff4c4981e7792ef7d1fa4c8ede58b9dbbcefb9ab3fc9770f2a07"},
-    {file = "hishel-0.0.33.tar.gz", hash = "sha256:ab5b2661d5e2252f305fd0fb20e8c76bfab3ea73458f20f2591c53c37b270089"},
+    {file = "hishel-0.1.1-py3-none-any.whl", hash = "sha256:5b51acc340303faeef2f5cfc1658acb1db1fdc3e3ad76406265a485f9707c5d6"},
+    {file = "hishel-0.1.1.tar.gz", hash = "sha256:1f6421b78cc23fc43c610f651b7848c9b8eee2d29551d64a2ab0d45b319b6559"},
 ]
 
 [package.dependencies]
 httpx = ">=0.22.0"
-typing-extensions = ">=4.8.0"
 
 [package.extras]
 redis = ["redis (==5.0.1)"]
@@ -4400,4 +4399,4 @@ dev = ["cookiecutter", "honcho", "watchfiles"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "9156e7417ff28d44e01389391a948246fdcb3854155319aba51fdf8fac72b2bc"
+content-hash = "607c1e5770a953155227972005bc834594c26b813635f676110975d9083b258d"
