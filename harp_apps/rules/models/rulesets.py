@@ -84,6 +84,9 @@ class BaseRuleSet:
         """
         Match the given arguments against the rules. Each argument must match a "level" in this ruleset.
         """
+        if not self.rules:
+            return
+
         if len(args) != len(self._levels):
             raise ValueError(f"Expected {len(self._levels)} arguments, got {len(args)}")
 
