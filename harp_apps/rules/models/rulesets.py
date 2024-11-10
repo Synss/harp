@@ -1,4 +1,5 @@
 from functools import reduce
+from typing import Iterable
 
 import orjson
 
@@ -6,35 +7,30 @@ from harp_apps.rules.constants import DEFAULT_LEVELS, DEFAULT_RULES_LEVELS
 from harp_apps.rules.models.compilers import BaseRuleSetCompiler
 from harp_apps.rules.models.patterns import Pattern
 
-
 DEFAULT_RULE_MATCHER = Pattern("__default__")
 
 
-class Itemize:
-    def __init__(self, seq) -> None:
-        self._seq = seq
-
-    def __iter__(self):
-        try:
-            return iter(self._seq.items())
-        except AttributeError:
-            return iter(self._seq)
+def _items_iterator(seq) -> Iterable:
+    try:
+        yield from seq.items()
+    except AttributeError:
+        yield from seq
 
 
-def _match_level(rules, against):
-    default = None
+def _match_level(rules, against) -> Iterable:
+    default_rules = ()
     has_match = False
     for pattern, rules in rules:
         if pattern == DEFAULT_RULE_MATCHER:
-            default = rules
+            default_rules = _items_iterator(rules)
             continue
 
         if pattern.match(against):
             has_match = True
-            return Itemize(rules)
+            yield from _items_iterator(rules)
 
-    if not has_match and default:
-        return Itemize(default)
+    if default_rules and not has_match:
+        yield from default_rules
 
 
 def _rules_as_human_dict(rules: dict, *, show_scripts=True):
@@ -84,9 +80,6 @@ class BaseRuleSet:
         """
         Match the given arguments against the rules. Each argument must match a "level" in this ruleset.
         """
-        if not self.rules:
-            return
-
         if len(args) != len(self._levels):
             raise ValueError(f"Expected {len(self._levels)} arguments, got {len(args)}")
 

@@ -59,3 +59,18 @@ def test_repr():
     compiler = BaseRuleSetCompiler(levels=levels)
     ruleset = BaseRuleSet(compiler.compile({"foo": {"bar": "print('Hello, World!')"}}))
     assert repr(ruleset) == 'BaseRuleSet({"foo":{"bar":"..."}})'
+
+
+def test_multimatch():
+    levels = ("first", "second")
+    compiler = BaseRuleSetCompiler(levels=levels)
+    compiled = compiler.compile({"foo": {"bar": "1", "joe": "6"}})
+    compiled = compiler.compile({"f*": {"bar": "2", "b*": "3", "__default__": "4"}}, target=compiled)
+    compiled = compiler.compile({"__default__": {"__default__": "5"}}, target=compiled)
+
+    ruleset = BaseRuleSet(compiled, levels=compiler.levels)
+
+    assert list(ruleset.match("foo", "bar")) == [Script("1"), Script("2"), Script("3")]
+    assert list(ruleset.match("f00", "b00")) == [Script("3")]
+    assert list(ruleset.match("grr", "rrr")) == [Script("5")]
+    assert list(ruleset.match("foo", "joe")) == [Script("6"), Script("4")]
